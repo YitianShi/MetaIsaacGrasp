@@ -1,0 +1,11 @@
+__pycache__/
+models/models_ifl/*
+models/dataset_real/*
+data
+env/data
+data_all
+logs*
+experiments/*
+.algorithms/contact3d/contact3d/nn/vlm_util/dinov2_util/pretrained
+wandb*
+*.pth

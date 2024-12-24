@@ -1,0 +1,88 @@
+<?xml version="1.0" ?>
+<robot name="panda_gripper" xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <link name="base"/>
+  <link name="hand_rot"/>
+  
+  <joint name="hand_rotating" type="revolute">
+    <parent link="base"/>
+    <child link="hand_rot" />
+    <axis xyz="1 0 0"/>
+    <!--dynamics damping="0.800"/-->
+    <limit effort="20" lower="-0.2" upper="0.2" velocity="0.1"/>
+  </joint>
+
+  <joint name="hand_joint" type="prismatic">
+    <parent link="hand_rot"/>
+    <child link="hand"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="20" lower="-2" upper="2" velocity="0.5"/>
+  </joint>
+  
+  <link name="hand">
+    <visual>
+      <origin rpy="1.5707963267 0 1.5707963267" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://franka_description/meshes/visual/hand.obj"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="0 0 1.5707963267" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://franka_description/meshes/collision/hand.obj"/>
+      </geometry>
+    </collision>
+  </link>
+  
+  <link name="left_finger">
+    <visual>
+      <origin rpy="1.5707963267 0 1.5707963267" xyz="0.0 0.0 0.0"/>
+      <geometry>  
+        <mesh filename="package://franka_description/meshes/visual/finger.obj"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="1.5707963267 0 1.5707963267" xyz="0.0 0 0.0"/>
+      <geometry>
+        <mesh filename="package://franka_description/meshes/visual/finger.obj"/>
+      </geometry>
+    </collision>
+    -->
+  </link>
+  
+  
+  <joint name="finger_joint_left" type="prismatic">
+    <parent link="hand"/>
+    <child link="left_finger"/>
+    <origin rpy="0 0 0" xyz="-0.04 0 0.0584"/>
+    <axis xyz="1 0 0"/>
+    <limit effort="70" lower="0.0" upper="0.04" velocity="0.05"/>
+  </joint>
+
+
+  <link name="right_finger">
+    <visual>
+      <origin rpy="1.5707963267 0 4.71239" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://franka_description/meshes/visual/finger.obj"/>
+      </geometry>
+    </visual>
+    
+    <collision>
+    <origin rpy="1.5707963267 0 4.71239" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://franka_description/meshes/visual/finger.obj"/>
+      </geometry>
+    </collision>
+  </link>
+  
+  <joint name="finger_joint_right" type="prismatic">
+    <parent link="hand"/>
+    <child link="right_finger"/>
+    <origin rpy="0 0 0" xyz="0.04 0 0.0584"/>
+    <axis xyz="1 0 0"/>
+    <limit effort="70" lower="-0.04" upper="0.0" velocity="0.05"/>
+    <mimic joint="finger_joint_left"/>
+  </joint>
+ 
+</robot>
+  

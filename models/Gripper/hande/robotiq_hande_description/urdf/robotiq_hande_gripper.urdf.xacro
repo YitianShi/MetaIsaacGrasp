@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://ros.org/wiki/xacro"
+       name="robotiq_hande_gripper" >
+
+  <xacro:include filename="./robotiq_hande_gripper.xacro" />
+
+  <link name="tool0" />
+  <xacro:robotiq_hande_gripper parent="tool0" prefix="" />
+  
+</robot>

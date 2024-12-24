@@ -1,0 +1,32 @@
+# Reference: https://github.com/DLR-RM/rl-baselines3-zoo/blob/master/hyperparams/ppo.yml#L32
+seed: 42
+
+# epoch * n_steps * nenvs: 500×512*8*8
+n_timesteps: 4500000
+policy: 'MultiInputPolicy'
+# n_steps: 64
+# mini batch size: num_envs * nsteps / nminibatches 2048×512÷2048
+batch_size: 5
+buffer_size: 200
+# gae_lambda: 0.95
+gamma: 0.95
+ent_coef: "auto"
+learning_starts: 1000
+replay_buffer_class: HerReplayBuffer
+replay_buffer_kwargs: "dict(
+    goal_selection_strategy='future',
+    n_sampled_goal=4
+  )"
+target_update_interval: 10
+# vf_coef: 0.0001
+learning_rate: !!float 1e-3
+policy_kwargs: "dict(
+                  activation_fn=nn.ELU,
+                  net_arch=[256, 128, 64]
+                )"
+# target_kl: 0.01
+# max_grad_norm: 1.0
+
+# # Uses VecNormalize class to normalize obs
+# # Uses VecNormalize class to normalize rew
+# clip_obs: 5
