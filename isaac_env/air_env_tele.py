@@ -135,24 +135,25 @@ class AIR_RLTaskEnv(ManagerBasedRLEnv):
 
         # Markers
 
+        marker_scale = 0.025
         # Visualize goal of the end-effector
         frame_marker_cfg = FRAME_MARKER_CFG.copy()
-        frame_marker_cfg.markers["frame"].scale = (0.1, 0.1, 0.1)
+        frame_marker_cfg.markers["frame"].scale = (marker_scale, marker_scale, marker_scale)
         self.goal_marker = VisualizationMarkers(
             frame_marker_cfg.replace(prim_path="/Visuals/ee_goal"))
     
         # Visualize the current grasp pose
         frame_marker_grasp = FRAME_MARKER_CFG.copy()
-        frame_marker_grasp.markers["frame"].scale = (0.1, 0.1, 0.1)
+        frame_marker_grasp.markers["frame"].scale = (marker_scale, marker_scale, marker_scale)
         self.grasp_marker = VisualizationMarkers(
             frame_marker_grasp.replace(prim_path="/Visuals/grasp"))
         
         # Camera markers
-        frame_marker_cfg_cam = FRAME_MARKER_CFG.copy()
-        frame_marker_cfg_cam.markers["frame"].scale = (0.05, 0.05, 0.05)
-        self.camera_markers =[VisualizationMarkers(
-            frame_marker_cfg_cam.replace(prim_path=f"/Visuals/camera_{cam_id}")
-        ) for cam_id in range(n_multiple_cam)]
+        # frame_marker_cfg_cam = FRAME_MARKER_CFG.copy()
+        # frame_marker_cfg_cam.markers["frame"].scale = (0.05, 0.05, 0.05)
+        # self.camera_markers =[VisualizationMarkers(
+        #     frame_marker_cfg_cam.replace(prim_path=f"/Visuals/camera_{cam_id}")
+        # ) for cam_id in range(n_multiple_cam)]
 
         # Resolving the self.scene entities
         self.robot_entity_cfg.resolve(self.scene)
@@ -539,8 +540,7 @@ class AIR_RLTaskEnv(ManagerBasedRLEnv):
         # convert to torch
         delta_pose = torch.tensor(delta_pose, device=self.device).repeat(ids.shape[0], 1)
         # resolve gripper command
-        gripper_vel = torch.zeros(ids.shape[0], 1, device=delta_pose.device)
-        gripper_vel[:] = -1.0 if gripper_command else 1.0
+        self.des_gripper_state[ids] = -1. if gripper_command else 1
         # compute actions
         curr_pose = self.grasp_pose[ids]
         actions = apply_delta_pose(curr_pose[:, :3], curr_pose[:, 3:], delta_pose)
@@ -681,11 +681,11 @@ class AIR_RLTaskEnv(ManagerBasedRLEnv):
         )
 
         # Update camera marker
-        for cam_id in range(n_multiple_cam):
-            self.camera_markers[cam_id].visualize(
-                self.camera[cam_id].data.pos_w.clone(),
-                self.camera[cam_id].data.quat_w_ros.clone(),
-            )
+        # for cam_id in range(n_multiple_cam):
+        #    self.camera_markers[cam_id].visualize(
+        #        self.camera[cam_id].data.pos_w.clone(),
+        #        self.camera[cam_id].data.quat_w_ros.clone(),
+        #     )
             
         
     def save_data(

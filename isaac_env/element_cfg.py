@@ -45,7 +45,7 @@ step_total = 30 # total number of steps for each episode
 # Robot arm parameters
 robot_name = "ur10e_hand_e" # Choose from "ur10", "ur10e", "ur10e_2f85", "ur10e_hand_e"
 continuous_control = False # continuous control for robot
-robot_pos = (0.3, 0.7, 0.925) # robot position
+robot_pos = (0.1, 0.6, 0.925) # robot position
 bow_angle = 0.1 # bow angle of the robot
 approach_distance = 0.1 # distance to approach the object before grasp
 lift_height = 0.5 # height to lift the object
@@ -54,15 +54,15 @@ distance_limit = 2e-2 # distance limit for robot to reach the goal before state 
 ee_vel_limit = 5e-2 # velocity limit for robot to reach the goal before state transition
 ee_grasp_quat_default = (.5, -0.5, 0.5, -0.5) # default quaternion after grasping
 CONTROLLER = "NOT_IMPLEMENTED" # Not used, in future version, choose from "RMPFLOW"
-remote_agent = True # use remote agent for training
+remote_agent = False # use remote agent for training
 
 # Object parameters
 object_name = "obj"
 obj_vel_limit = 5e-1 # velocity limit for object to be regarded as stable
 obj_height_limit = 0.1 # height limit for object to be regarded as stable
 ee_obj_default = [
-    (0.5, 0.8),
-    (-0.2, 0.3),
+    (0.6, 0.9),
+    (-0., 0.4),
     (0.05, 0.15),
     (-1, 1),
     (-1, 1),
@@ -77,8 +77,10 @@ fix_rand_camera = True
 camera_name = "VMS3D_Femto_Mega_S_0/" if on_hand else "" 
 cam_height, cam_width = 480, 640 # camera resolution
 view_pos_w = torch.tensor((0.7, 0, 1.)) # viewpoint wrt. world
-view_pos_cam = (24.46*0.001, 15.9234*0.001, -.33675*0.001) # viewpoint wrt. camera
-view_quat_cam = (0.0, 1, -0, .0) # quaternion of viewpoint wrt. camera
+# view_pos_cam = (24.46*0.001, 15.9234*0.001, -.33675*0.001) # viewpoint wrt. camera
+# view_quat_cam = (0.0, 0, 1, .0) # quaternion of viewpoint wrt. camera
+view_pos_cam = (-2, 57.55, 1.5) # viewpoint wrt. camera
+view_quat_cam = (-0.6691306, 0.7431448, 0, 0,) # quaternion of viewpoint wrt. camera
 depth_max = 2. # maximum depth for the camera
 sphere_radius = 0.6 
 
@@ -179,19 +181,19 @@ gripper_joint_cfg = {
 }
 
 ARM_JOINT = {
-    "shoulder_pan_joint": -0.1,
-    "shoulder_lift_joint": -np.pi / 2 * 1.5 + bow_angle,
-    "elbow_joint": np.pi / 2,
-    "wrist_1_joint": -np.pi / 4 - bow_angle - .2,
+    "shoulder_pan_joint": 0.,
+    "shoulder_lift_joint": -np.pi + bow_angle,
+    "elbow_joint": np.pi / 2 * 1.5,
+    "wrist_1_joint": -np.pi / 2 - bow_angle,
     "wrist_2_joint": -np.pi / 2,
-    "wrist_3_joint": np.pi - 0.1,
+    "wrist_3_joint": np.pi,
 }
 JOINT_SETUP = ARM_JOINT.copy()
 JOINT_SETUP.update(gripper_joint_cfg[robot_name]["default"])
 
-
-focal_length_cm = 18.14756
-horizontal_aperture_mm = 20.955
+focus_distance = 44. # 400.0
+focal_length_cm = 1.69 # 18.14756
+horizontal_aperture_mm = 2.59 # 20.955
 sensor_width_m = horizontal_aperture_mm / 1000
 focal_length_m = focal_length_cm / 1000  # error in orbit, it ignore the unit of focal length
 
@@ -223,9 +225,9 @@ CAMERA_CFG = CameraCfg(
     colorize_instance_segmentation=False,
     spawn=sim_utils.PinholeCameraCfg(
         focal_length=focal_length_cm,
-        focus_distance=400.0,
+        focus_distance=focus_distance,
         horizontal_aperture=horizontal_aperture_mm,
-        clipping_range=(0.1, 1.0e5),
+        clipping_range=(0.01, 1.0e5),
     ),
     offset=CameraCfg.OffsetCfg(pos=view_pos_cam if on_hand else view_pos_w, 
                                rot=view_quat_cam, 
@@ -252,9 +254,9 @@ CAMERA_RANDOM_CFG = [
         colorize_semantic_segmentation=False,
         colorize_instance_segmentation=False,
         spawn=sim_utils.PinholeCameraCfg(
-            focal_length=18.14756,
-            focus_distance=400.0,
-            horizontal_aperture=20.955,
+            focal_length=focal_length_cm,
+            focus_distance=focus_distance,
+            horizontal_aperture=horizontal_aperture_mm,
             clipping_range=(0.1, 1.0e5),
         ),
         offset=MISSING,

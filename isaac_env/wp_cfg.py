@@ -23,7 +23,7 @@ class PickSmState:
 class PickSmLimitTime:
     """Additional wait times (in s) for states for before switching."""
 
-    start = wp.constant(2.)
+    start = wp.constant(1.)
     reach = wp.constant(1.)
     approach = wp.constant(1.5)
     grasp = wp.constant(.5)

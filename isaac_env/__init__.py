@@ -31,7 +31,7 @@ gym.register(
 )
 
 gym.register(
-    id="AIR-v0-cont",
+    id="AIR-v0-Cont",
     # entry_point="omni.isaac.lab.envs:ManagerBasedRLEnv",
     entry_point="isaac_env.air_env_continuous:AIR_RLTaskEnv",
     kwargs={
