@@ -30,7 +30,7 @@ from omni.isaac.lab.managers import SceneEntityCfg
 from omni.isaac.lab.markers import VisualizationMarkers
 from omni.isaac.lab.markers.config import FRAME_MARKER_CFG, RAY_CASTER_MARKER_CFG
 from omni.isaac.lab.utils import convert_dict_to_backend
-from omni.isaac.lab.utils.math import subtract_frame_transforms, quat_mul, combine_frame_transforms
+from omni.isaac.lab.utils.math import subtract_frame_transforms, quat_mul, combine_frame_transforms, apply_delta_pose
 
 from metagraspnet.Scripts.visualize_labels import (
     create_contact_pose,
@@ -114,9 +114,10 @@ class AIR_RLTaskEnv(ManagerBasedRLEnv):
 
         # Initialize the teleoperation interface
         self.teleop_interface = Se3Keyboard(
-            pos_sensitivity=0.1, rot_sensitivity=0.05
+            pos_sensitivity=0.05, rot_sensitivity=0.05
         )
-        self.teleop_interface.add_callback("L", self._reset_idx)
+        self.teleop_interface.add_callback("L", self._manual_reset_env)
+        self.teleop_interface.add_callback("R", self._manual_reset)
 
         self.teleop_interface.reset()
 
@@ -147,11 +148,11 @@ class AIR_RLTaskEnv(ManagerBasedRLEnv):
             frame_marker_grasp.replace(prim_path="/Visuals/grasp"))
         
         # Camera markers
-        # frame_marker_cfg_cam = FRAME_MARKER_CFG.copy()
-        # frame_marker_cfg_cam.markers["frame"].scale = (0.05, 0.05, 0.05)
-        # self.camera_markers =[VisualizationMarkers(
-        #     frame_marker_cfg_cam.replace(prim_path=f"/Visuals/camera_{cam_id}")
-        # ) for cam_id in range(n_multiple_cam)]
+        frame_marker_cfg_cam = FRAME_MARKER_CFG.copy()
+        frame_marker_cfg_cam.markers["frame"].scale = (0.05, 0.05, 0.05)
+        self.camera_markers =[VisualizationMarkers(
+            frame_marker_cfg_cam.replace(prim_path=f"/Visuals/camera_{cam_id}")
+        ) for cam_id in range(n_multiple_cam)]
 
         # Resolving the self.scene entities
         self.robot_entity_cfg.resolve(self.scene)
@@ -534,16 +535,16 @@ class AIR_RLTaskEnv(ManagerBasedRLEnv):
     def get_teleop_action(self, ids, obs_buf):
         delta_pose, gripper_command = self.teleop_interface.advance()
         delta_pose = delta_pose.astype("float32")
-        print(f"Delta pose: {delta_pose}")
+        # print(f"Delta pose: {delta_pose}")
         # convert to torch
         delta_pose = torch.tensor(delta_pose, device=self.device).repeat(ids.shape[0], 1)
         # resolve gripper command
         gripper_vel = torch.zeros(ids.shape[0], 1, device=delta_pose.device)
         gripper_vel[:] = -1.0 if gripper_command else 1.0
         # compute actions
-        curr_pose = self._get_ee_pose()[ids]
-        pos = curr_pose[:, :3] + delta_pose[:, :3]
-        actions = torch.concat([pos, curr_pose[:, 3:]], dim=1)
+        curr_pose = self.grasp_pose[ids]
+        actions = apply_delta_pose(curr_pose[:, :3], curr_pose[:, 3:], delta_pose)
+        actions = torch.cat(actions, dim=-1)
         # update the grasp pose
         self.grasp_pose[ids] = actions.to(self.device)
         return self.grasp_pose
@@ -587,6 +588,16 @@ class AIR_RLTaskEnv(ManagerBasedRLEnv):
         
         self.grasp_pose[ids] = actions.to(self.device)
         return self.grasp_pose
+    
+    def _manual_reset_env(self):
+        """Manual reset of the environment."""
+        self.teleop_interface.reset()
+        self.sm_state[self.sm_state == STATE_MACHINE["execute"]] = STATE_MACHINE["init_env"]
+    
+    def _manual_reset(self):
+        """Manual reset of the environment."""
+        self.teleop_interface.reset()
+        self.sm_state[self.sm_state == STATE_MACHINE["execute"]] = STATE_MACHINE["init"]
 
     def _summerize_and_reset(self, reward_buf):
         """
@@ -594,7 +605,7 @@ class AIR_RLTaskEnv(ManagerBasedRLEnv):
         reset the indexed enviroments
         """
         # Judge in the terminate state
-        judge_reward = self.sm_state == STATE_MACHINE["lift"]
+        judge_reward = self.sm_state == STATE_MACHINE["execute"]
         # Calculate the reward
         if reward_buf.any():
             self._record_reward(judge_reward)
@@ -608,6 +619,9 @@ class AIR_RLTaskEnv(ManagerBasedRLEnv):
         self._reset_robot(init_id)
         self._reset_idx(init_env_id)
         #self.teleop_interface.reset()
+
+        # To stabilize the robot, set the grasp pose to the current pose during the start state
+        self.grasp_pose[self.sm_state == STATE_MACHINE["start"]] = self._get_ee_pose()[self.sm_state == STATE_MACHINE["start"]]
 
     def _record_reward(self, judge_reward):
         """Summarize the reward and print the success message."""
@@ -667,11 +681,11 @@ class AIR_RLTaskEnv(ManagerBasedRLEnv):
         )
 
         # Update camera marker
-        # for cam_id in range(n_multiple_cam):
-        #     self.camera_markers[cam_id].visualize(
-        #         self.camera[cam_id].data.pos_w.clone(),
-        #         self.camera[cam_id].data.quat_w_ros.clone(),
-        #     )
+        for cam_id in range(n_multiple_cam):
+            self.camera_markers[cam_id].visualize(
+                self.camera[cam_id].data.pos_w.clone(),
+                self.camera[cam_id].data.quat_w_ros.clone(),
+            )
             
         
     def save_data(
