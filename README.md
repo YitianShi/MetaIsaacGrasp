@@ -11,6 +11,10 @@ A test-bench for grasp learning including:
 
 [![Video Title](https://img.youtube.com/vi/FSXTWSLbo68/0.jpg)](https://www.youtube.com/watch?v=FSXTWSLbo68)
 
+#### Teleoperation
+
+[![Video Title](https://img.youtube.com/vi/FSXTWSLbo68/0.jpg)](https://www.youtube.com/watch?v=XxlxfCCyMCE)
+
 <div align="center">
 <p float="left">
   <img src="pic/rgb.png" width="300" />
