@@ -102,3 +102,48 @@ def transformation_matrix_to_pose_vector(transformation_matrix):
     )
 
     return pose_vec
+
+def rotation_matrix_from_view(
+    eyes: torch.Tensor,
+    targets: torch.Tensor,
+    device: str = "cpu",
+) -> torch.Tensor:
+    """Compute the rotation matrix from world to view coordinates.
+
+    This function takes a vector ''eyes'' which specifies the location
+    of the camera in world coordinates and the vector ''targets'' which
+    indicate the position of the object.
+    The output is a rotation matrix representing the transformation
+    from world coordinates -> view coordinates.
+
+        The inputs eyes and targets can each be a
+        - 3 element tuple/list
+        - torch tensor of shape (1, 3)
+        - torch tensor of shape (N, 3)
+
+    Args:
+        eyes: Position of the camera in world coordinates.
+        targets: Position of the object in world coordinates.
+        up_axis: The up axis of the camera. Defaults to "Z".
+        device: The device to create torch tensors on. Defaults to "cpu".
+
+    The vectors are broadcast against each other so they all have shape (N, 3).
+
+    Returns:
+        R: (N, 3, 3) batched rotation matrices
+
+    Reference:
+    Based on PyTorch3D (https://github.com/facebookresearch/pytorch3d/blob/eaf0709d6af0025fe94d1ee7cec454bc3054826a/pytorch3d/renderer/cameras.py#L1635-L1685)
+    """
+    up_axis_vec = torch.tensor((0, 0, 1), device=device, dtype=torch.float32).repeat(eyes.shape[0], 1)
+
+    # get rotation matrix in opengl format (-Z forward, +Y up)
+    y_axis = torch.nn.functional.normalize(targets - eyes, eps=1e-5)
+    x_axis = -torch.nn.functional.normalize(torch.cross(up_axis_vec, y_axis, dim=1), eps=1e-5)
+    z_axis = torch.nn.functional.normalize(torch.cross(x_axis, y_axis, dim=1), eps=1e-5)
+    is_close = torch.isclose(x_axis, torch.tensor(0.0), atol=5e-3).all(dim=1, keepdim=True)
+    if is_close.any():
+        replacement = torch.nn.functional.normalize(torch.cross(y_axis, z_axis, dim=1), eps=1e-5)
+        x_axis = torch.where(is_close, replacement, x_axis)
+    R = torch.cat((x_axis[:, None, :], y_axis[:, None, :], z_axis[:, None, :]), dim=1)
+    return R.transpose(1, 2)

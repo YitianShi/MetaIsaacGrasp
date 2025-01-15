@@ -12,10 +12,13 @@ import glob
 import os
 import random
 from pathlib import Path
+import matplotlib.pyplot as plt
 
 import omni.isaac.lab.sim as sim_utils
 import torch
 import numpy as np
+from .read_targo import read_targo
+from scipy.spatial.transform import Rotation as R
 
 # from omni.isaac.lab.sensors.camera import Camera, PinholeCameraCfg
 from omni.isaac.lab.actuators import ImplicitActuatorCfg
@@ -24,18 +27,16 @@ from omni.isaac.lab.controllers import DifferentialIKControllerCfg
 from omni.isaac.lab.sensors import CameraCfg
 from omni.isaac.lab.utils.math import *
 from dataclasses import MISSING
+import trimesh as tm
 
 # Hyperparameters
 # Parameters frequently changed
 use_sb3 = False # use stable baselines3 for training
 on_hand = True # whether the camera is on the hand 
 num_objs = 12 # number of objects
-use_urdf_converter =  False # use urdf converter to convert usd to urdf
-random_drop_obj = True # drop object randomly under the table
+use_urdf_converter = False # use urdf converter to convert usd to urdf
 
 # Task parameters 
-collect_data = False # collect data for training
-save_data = True # save data during training 
 read_from_hdf5 = False # read data from hdf5 file to get grasp pose
 
 # Learning Environment parameters
@@ -47,29 +48,17 @@ robot_name = "ur10e_hand_e" # Choose from "ur10", "ur10e", "ur10e_2f85", "ur10e_
 continuous_control = False # continuous control for robot
 robot_pos = (0.1, 0.6, 0.925) # robot position
 bow_angle = 0.1 # bow angle of the robot
-approach_distance = 0.1 # distance to approach the object before grasp
+down_ration = .75 # down ration of the robot
+wrist_lift = .5 # wrist lift of the robot
+approach_distance = 0.05 # distance to approach the object before grasp
 lift_height = 0.5 # height to lift the object
 grasp_distance = 0.1 # apprach distance before grasp the object
 distance_limit = 2e-2 # distance limit for robot to reach the goal before state transition
 ee_vel_limit = 5e-2 # velocity limit for robot to reach the goal before state transition
 ee_grasp_quat_default = (.5, -0.5, 0.5, -0.5) # default quaternion after grasping
 CONTROLLER = "NOT_IMPLEMENTED" # Not used, in future version, choose from "RMPFLOW"
-remote_agent = False # use remote agent for training
-
-# Object parameters
-object_name = "obj"
-obj_vel_limit = 5e-1 # velocity limit for object to be regarded as stable
-obj_height_limit = 0.1 # height limit for object to be regarded as stable
-ee_obj_default = [
-    (0.6, 0.9),
-    (-0., 0.4),
-    (0.05, 0.15),
-    (-1, 1),
-    (-1, 1),
-    (-1, 1),
-    (-1, 1),
-]
-obj_drop_pose = (0.3, 0.7, 0.1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0) # object drop pose
+remote_agent = True # use remote agent for training
+targo = False
 
 # Camera parameters
 n_multiple_cam = 1 # number of multiple cameras, at least 1 for on_hand camera otherwise disable_camera = True
@@ -83,6 +72,7 @@ view_pos_cam = (-2, 57.55, 1.5) # viewpoint wrt. camera
 view_quat_cam = (-0.6691306, 0.7431448, 0, 0,) # quaternion of viewpoint wrt. camera
 depth_max = 2. # maximum depth for the camera
 sphere_radius = 0.6 
+up_direction = torch.tensor([0., 0., 1.]) # up direction of the camera
 
 STATE_MACHINE = {
     "init_env": 0,
@@ -102,8 +92,9 @@ obj_exclude = [ '003', '033', '030', '055', '074', '078', '018',
                 #'026', '019', '043', '061', '076', '025', '018', '079',
                 #'028', '067', '010', '012', '004', '035', '020', '023'
                 ]
+
 ################# PATH CONFIG #################
-HOME_PATH = Path(os.getcwd()) # "omniverse://nucleus.ifl.kit.edu/Users/yitian/" 
+HOME_PATH =  "omniverse://nucleus.ifl.kit.edu/Users/yitian/" # Path(os.getcwd())
 
 nums = [f"{i:03}" for i in range(0, 83)]
 for i in obj_exclude:
@@ -113,8 +104,12 @@ MODEL_PATH = os.path.join(HOME_PATH, "models", "models_ifl") # path to the model
 MGN_PATHS = [os.path.join(MODEL_PATH, a, "orbit_obj.usd") for a in nums] # path to the objects
  
 CORNER_PATHS = [os.path.join(HOME_PATH, "models/obj.usd")] # path to the corner marker squares
-MGN_PATHS_URDF = [os.path.join(MODEL_PATH, a, "orbit_obj.urdf") for a in nums] # path to the objects in urdf format
+MGN_PATHS_URDF = [os.path.join(MODEL_PATH, a, "textured.urdf") for a in nums] # path to the objects in urdf format
 
+# Target object path and pose
+view_pos_targo = (0.3, 0.18, 0.) # viewpoint wrt. targo object
+shift_targo = tuple(a + b for a, b in zip(view_pos_targo, robot_pos))
+TARGO_OBJ_PATHS, targo_obj_scales, targo_obj_positions, targo_obj_rotations, occ_targ_max, targo_extrinsic, targo_obj_chosen = read_targo(shift_targo)
 
 USD_PATH = os.path.join(HOME_PATH, "models") # path to the usd files
 IMG_PATH = os.path.join("./", "data") # path to the data storage
@@ -124,15 +119,23 @@ if not os.path.exists(IMG_PATH):
     os.makedirs(IMG_PATH)
     print(f"Directory {IMG_PATH} created since it does not exist")
 
-# use urdf converter to convert usd to urdf or not    
-OBJ_PATH = MGN_PATHS_URDF if use_urdf_converter else MGN_PATHS
-    
-random.shuffle(OBJ_PATH)
-OBJ_LABLE = [i.split("/")[-2] for i in OBJ_PATH][:num_objs]
+# use urdf converter to convert usd to urdf or not
+if targo:
+    OBJ_PATH = TARGO_OBJ_PATHS
+    num_objs = len(TARGO_OBJ_PATHS)
+elif use_urdf_converter:    
+    OBJ_PATH = MGN_PATHS_URDF  
+else:
+    OBJ_PATH = MGN_PATHS
+
+if not targo:
+    random.shuffle(OBJ_PATH)
+    OBJ_LABLE = [i.split("/")[-2] for i in OBJ_PATH][:num_objs]
+else:
+    OBJ_LABLE = [i.split("/")[-1].split(".")[0] for i in OBJ_PATH][:num_objs]
 
 
 ################# ROBOT ARM CONFIG #################
-
 
 ROBOTIQ_2F85_JOINT_CFG = {
     "default": {
@@ -182,23 +185,56 @@ gripper_joint_cfg = {
 
 ARM_JOINT = {
     "shoulder_pan_joint": 0.,
-    "shoulder_lift_joint": -np.pi + bow_angle,
-    "elbow_joint": np.pi / 2 * 1.5,
-    "wrist_1_joint": -np.pi / 2 - bow_angle,
+    "shoulder_lift_joint": -np.pi * down_ration + bow_angle,
+    "elbow_joint": np.pi * down_ration,
+    "wrist_1_joint": -np.pi / 2 - bow_angle - wrist_lift,
     "wrist_2_joint": -np.pi / 2,
     "wrist_3_joint": np.pi,
 }
+
+if targo:
+    ARM_JOINT.update({
+        "shoulder_pan_joint": 0.133,
+        "shoulder_lift_joint": -1.077,
+        "elbow_joint": 2.852,
+        "wrist_1_joint": -4.356,
+        "wrist_2_joint": -1.683,
+        "wrist_3_joint": 3.212,
+    })
+
 JOINT_SETUP = ARM_JOINT.copy()
 JOINT_SETUP.update(gripper_joint_cfg[robot_name]["default"])
+
+# Object parameters
+object_name = "obj"
+obj_vel_limit = 5e-1 # velocity limit for object to be regarded as stable
+obj_height_limit = 0.1 # height limit for object to be regarded as stable
+desk_center = (0.75, 0.2, 0) # center of the desk
+
+ee_obj_default = [
+    (desk_center[0] - 0.15, desk_center[0] + 0.15),
+    (desk_center[1] - 0.15, desk_center[1] + 0.15),
+    (0.05, 0.15),
+    (-1, 1),
+    (-1, 1),
+    (-1, 1),
+    (-1, 1),
+]
+obj_drop_pose = (0.3, 0.7, 0.1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0) # object drop pose
+
+# Viewpoint sampling paremeters
+if targo:
+    desk_center = torch.tensor(targo_obj_positions.mean(axis=0) - robot_pos, dtype=torch.float32)
+
+center_pt = torch.tensor((desk_center[0], desk_center[1], 0.), dtype=torch.float32)
+
+################# CAMERA CONFIG #################
 
 focus_distance = 44. # 400.0
 focal_length_cm = 1.69 # 18.14756
 horizontal_aperture_mm = 2.59 # 20.955
 sensor_width_m = horizontal_aperture_mm / 1000
 focal_length_m = focal_length_cm / 1000  # error in orbit, it ignore the unit of focal length
-
-
-################# CAMERA CONFIG #################
 
 disable_camera = n_multiple_cam == 0
 
@@ -264,19 +300,12 @@ CAMERA_RANDOM_CFG = [
     for _ in range(n_random_cam)
     ]
 
-# Viewpoint sampling paremeters
-center_pt = torch.tensor(((ee_obj_default[0][0] + ee_obj_default[0][1]) / 2, 
-                          (ee_obj_default[1][0] + ee_obj_default[1][1]) / 2, 
-                          0.), 
-                          dtype=torch.float32)
-
-
 ################# ROBOT CONFIG #################
 
 # Reachable end effector goals
 ee_goals_default = [
-    (0.3, 0.9),
-    (-0.4, 0.4),
+    (desk_center[0] - 0.4, desk_center[0] + 0.4),
+    (desk_center[1] - 0.6, desk_center[1] + 0.4),
     (0.4, 0.6),
     (-1, 1),
     (-1, 1),
@@ -340,10 +369,9 @@ UR10e_HAND_E_CFG = ArticulationCfg(
         ),
         "gripper": ImplicitActuatorCfg(
             joint_names_expr=[*ROBOTIQ_HAND_E_JOINT_CFG["default"]],
-            velocity_limit=0.001,
-            effort_limit=1e3,
             stiffness=1e10,
             damping=1e3,
+            friction=0.8
         ),
     },
 )
@@ -408,28 +436,6 @@ MARK2_CFG = AssetBaseCfg(
         rigid_props=rigid_props,
     ),
     init_state=AssetBaseCfg.InitialStateCfg(
-        pos=(ee_goals_default[0][1], ee_goals_default[1][0], 0),
-        rot=(1, 0.0, 0.0, 0),
-    ),
-)
-
-MARK3_CFG = AssetBaseCfg(
-    spawn=sim_utils.UsdFileCfg(
-        usd_path=f"{USD_PATH}/obj.usd",
-        rigid_props=rigid_props,
-    ),
-    init_state=AssetBaseCfg.InitialStateCfg(
-        pos=(ee_goals_default[0][0], ee_goals_default[1][1], 0),
-        rot=(1, 0.0, 0.0, 0),
-    ),
-)
-
-MARK4_CFG = AssetBaseCfg(
-    spawn=sim_utils.UsdFileCfg(
-        usd_path=f"{USD_PATH}/obj.usd",
-        rigid_props=rigid_props,
-    ),
-    init_state=AssetBaseCfg.InitialStateCfg(
         pos=(ee_goals_default[0][1], ee_goals_default[1][1], 0),
         rot=(0, 0.0, 0.0, 0),
     ),
@@ -482,27 +488,37 @@ MGN_CFGs_URDF = [
 TARGO_CFGs_URDF = [
     RigidObjectCfg(
         spawn=sim_utils.UrdfFileCfg(
-            asset_path=mgn,
-            rigid_props=rigid_props,
-            mass_props = sim_utils.MassPropertiesCfg(density=1.0),
+            asset_path=tgo,
+            rigid_props= rigid_props,
+            mass_props = sim_utils.MassPropertiesCfg(density=5.0),
             articulation_props=sim_utils.ArticulationRootPropertiesCfg(
                 articulation_enabled=False,
             ),
             fix_base=False,
             force_usd_conversion=True,
             make_instanceable=False,
-            semantic_tags=[("class", f"{mgn.split('/')[-2]}"), ("color", "red")],
+            semantic_tags=[("class", f"{tgo.split('/')[-2]}"), ("color", "red")],
+            scale=[scale] * 3,
+            visual_material = sim_utils.PreviewSurfaceCfg(
+            diffuse_color=(0., 0., 0.) if targo_obj_chosen == tgo else (random.random(), random.random(), random.random()),
+            metallic=0.5
+       ),
         ),
         init_state=RigidObjectCfg.InitialStateCfg(
-            pos=robot_pos,
-            rot=(1, 0.0, 0.0, 0),
+            pos=pos,
+            rot=rot,
         ),
     )
-    for mgn in MGN_PATHS_URDF
+    for tgo, pos, rot, scale in zip(TARGO_OBJ_PATHS, targo_obj_positions, targo_obj_rotations, targo_obj_scales)
 ]
 
 ################# OBJECT CONFIG #################
-OBJ_CFGs = MGN_CFGs_URDF if use_urdf_converter else MGN_CFGs
+if targo:
+    OBJ_CFGs = TARGO_CFGs_URDF
+elif use_urdf_converter:
+    OBJ_CFGs = MGN_CFGs_URDF
+else:
+    OBJ_CFGs = MGN_CFGs
 
 ################# CONTROLLER CONFIG #################
 UR_IK_CFG = DifferentialIKControllerCfg(
@@ -516,6 +532,27 @@ ROBOT_CFGs = {
 }
 
 ################# MARKER CONFIG #################
+marker_scale = 0.025
 from omni.isaac.lab.markers.config import FRAME_MARKER_CFG  # isort: skip
 FRAME_MARKER_SMALL_CFG = FRAME_MARKER_CFG.copy()
 FRAME_MARKER_SMALL_CFG.markers["frame"].scale = (0.10, 0.10, 0.10)
+
+################# REMOTE AGENT CONFIG #################
+
+# server initialization
+if remote_agent:
+    import socket, sys
+    chunk_size = 4096
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    # Allows the socket to reuse the address
+    server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    try:
+        server.bind(('localhost', 8081))
+        server.listen(1)
+        print("Simulation server is waiting for the agent...")
+        conn, addr = server.accept()
+        print(f"Connected to agent at {addr}. Adding remote agent inference to teleoperation interface.")
+    except socket.error as e:
+        print(f"Failed to start the server: {e}")
+        server.close()
+        sys.exit(1)  # Exit if we cannot start the server

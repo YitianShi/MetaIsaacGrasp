@@ -26,6 +26,7 @@ from omni.isaac.lab.sensors.frame_transformer.frame_transformer_cfg import (
 )
 from omni.isaac.lab.utils import configclass
 from omni.isaac.lab.utils.math import *
+from omni.isaac.lab.markers.config import RAY_CASTER_MARKER_CFG
 
 from .element_cfg import *
 
@@ -59,10 +60,8 @@ class CellSceneCfg(InteractiveSceneCfg):
             prim_path="{ENV_REGEX_NS}/" + robot_name
         ))
 
-        # self.mark = MARK1_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot/Mark1")
-        # self.mark2 = MARK2_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot/Mark2")
-        # self.mark3 = MARK3_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot/Mark3")
-        # self.mark4 = MARK4_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot/Mark4")
+        # self.mark = MARK1_CFG.replace(prim_path="{ENV_REGEX_NS}/" + robot_name + "/Mark1")
+        # self.mark2 = MARK2_CFG.replace(prim_path="{ENV_REGEX_NS}/" + robot_name + "/Mark2")
 
         super().__init__(**kwargs)
         
@@ -102,7 +101,7 @@ class CellSceneCfg(InteractiveSceneCfg):
             )
         ],)
 
-        if on_hand and not collect_data:
+        if on_hand:
             self.view_frame = FrameTransformerCfg(
             prim_path="{ENV_REGEX_NS}/"+robot_name+"/base_link",
             debug_vis=False,
@@ -210,6 +209,7 @@ class ObservationsCfg:
     class ImageCfg(ObsGroup):
 
         def __init__(self):
+            super().__init__()
             if "rgb" in MODALITIES:
                 self.rgb = ObsTerm(func=rgb_capture)
             if "normals" in MODALITIES:
@@ -220,7 +220,6 @@ class ObservationsCfg:
                 self.distance_to_image_plane = ObsTerm(func=depth_capture)
                 self.pcd = ObsTerm(func=pcd_capture)
 
-            self.enable_corruption = True
             self.concatenate_terms = False
 
     @configclass
@@ -288,7 +287,7 @@ def reset_root_state_uniform(
     positions = root_states[:, 0:3] + env.scene.env_origins[env_ids] + rand_samples[:, 0:3]
 
     # random object dropped on the ground
-    if collect_data and random_drop_obj:
+    if env.random_drop_obj:
         z_mask = torch.bernoulli(torch.full((len(env_ids),), 0.2, device=asset.device)).bool()
         positions[z_mask, -1] = 0.1
 
@@ -361,31 +360,40 @@ def reset_root_state_sphere(
 @configclass
 class EventCfg:
     def __init__(self, num_objs):
-        self.reset_robot_pos = EventTerm(
-            func=reset_robot_to_default,
-            mode="reset",
-        )
-        for i in range(num_objs):
-            setattr(
-                self,
-                f"reset_obj_pos_{i}",
-                EventTerm(
-                    func=reset_root_state_uniform,
-                    mode="reset",
-                    params={
-                        "pose_range": {
-                            "x": ee_obj_default[0],
-                            "y": ee_obj_default[1],
-                            "z": ee_obj_default[2],
-                            "roll": (-1.0, 1.0),
-                            "pitch": (-1.0, 1.0),
-                            "yaw": (-1.0, 1.0),
-                        },
-                        "velocity_range": {},
-                        "asset_cfg": SceneEntityCfg(f"obj_{i}"),
-                    },
-                ),
+        if not targo:
+            self.reset_robot_pos = EventTerm(
+                func=reset_robot_to_default,
+                mode="reset",
             )
+        
+            for i in range(num_objs):
+                setattr(
+                    self,
+                    f"reset_obj_pos_{i}",
+                    EventTerm(
+                        func=reset_root_state_uniform,
+                        mode="reset",
+                        params={
+                            "pose_range": {
+                                "x": ee_obj_default[0],
+                                "y": ee_obj_default[1],
+                                "z": ee_obj_default[2],
+                                "roll": (-1.0, 1.0),
+                                "pitch": (-1.0, 1.0),
+                                "yaw": (-1.0, 1.0),
+                            },
+                            "velocity_range": {},
+                            "asset_cfg": SceneEntityCfg(f"obj_{i}"),
+                        },
+                    ),
+                )
+        else:
+            for i in range(num_objs):
+                self.reset_obj_pos = EventTerm(
+                        func=mdp.reset_scene_to_default,
+                        mode="reset",
+                    )
+                
         for ix in range(n_random_cam):
             setattr(
                 self,

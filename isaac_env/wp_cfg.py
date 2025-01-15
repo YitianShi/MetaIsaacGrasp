@@ -162,6 +162,31 @@ def infer_state_machine_tele(
     elif state == PickSmState.execute:
         # robot start to execute the grasp based on continuous control
         des_ee_pose[tid] = grasp_pose[tid]
+        sm_wait_time[tid] = 0.0
+
+    elif state == PickSmState.reach:
+        # robot moves to the object above
+        des_ee_pose[tid] = approach_pose_from_grasp_pose(grasp_pose[tid])
+        des_gripper_state[tid] = GripperState.OPEN
+        # error between current and desired ee pose below threshold
+        if dist_transforms(ee_pose[tid], des_ee_pose[tid])<distance_limit and ee_vel[tid]<ee_vel_limit:
+            # move to next state and reset wait time
+            sm_state[tid] = PickSmState.approach
+        # wait for a while
+        elif sm_wait_time[tid] >= PickSmLimitTime.reach:
+            # move to next state and reset wait time
+            sm_state[tid] = PickSmState.init
+
+    elif state == PickSmState.approach:
+        # robot moves to the grasp position
+        des_ee_pose[tid] = grasp_pose[tid]
+        des_gripper_state[tid] = GripperState.OPEN
+        # Error between current and desired ee pose below threshold
+        # Or the approaching time is longer than the limit
+        if dist_transforms(ee_pose[tid], des_ee_pose[tid])<distance_limit and ee_vel[tid]<ee_vel_limit or sm_wait_time[tid] >= PickSmLimitTime.approach:
+            # move to next state and reset wait time
+            sm_state[tid] = PickSmState.execute
+            sm_wait_time[tid] = 0.0
         
     # increment wait time
     sm_wait_time[tid] = sm_wait_time[tid] + dt[tid]
