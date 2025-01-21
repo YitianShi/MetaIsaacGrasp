@@ -1,4 +1,4 @@
-# MetaIsaacGrasp: IsaacLab for Supersed / Reinforcement learning
+# MetaIsaacGrasp: IsaacLab for Supervised / Reinforcement learning
 
 A test-bench for grasp learning including: 
 
@@ -8,7 +8,7 @@ A test-bench for grasp learning including:
 - Reinforcement learning (In progress)`AIR-v0-Cont`
 
 #### Click to watch the demo video (Inference with remote agent functionality by [vMF-Contact](https://github.com/YitianShi/vMF-Contact))
-
+All the successfully grasped objects will be put under the table
 [![Video Title](https://img.youtube.com/vi/FSXTWSLbo68/0.jpg)](https://www.youtube.com/watch?v=FSXTWSLbo68)
 
 #### Teleoperation
