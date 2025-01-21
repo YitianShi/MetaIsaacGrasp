@@ -1,6 +1,6 @@
 # MetaIsaacGrasp: IsaacLab for Supervised / Reinforcement learning
 
-A test-bench for grasp learning including: 
+A data generation engine and test-bench for grasp learning including: 
 
 - Data generation `AIR-v0-Data`
 - Policy evaluation `AIR-v0-Grasp`
@@ -8,7 +8,9 @@ A test-bench for grasp learning including:
 - Reinforcement learning (In progress)`AIR-v0-Cont`
 
 #### Click to watch the demo video (Inference with remote agent functionality by [vMF-Contact](https://github.com/YitianShi/vMF-Contact))
-All the successfully grasped objects will be put under the table
+
+(All the successfully grasped objects will be put under the table.)
+
 [![Video Title](https://img.youtube.com/vi/FSXTWSLbo68/0.jpg)](https://www.youtube.com/watch?v=FSXTWSLbo68)
 
 #### Teleoperation
@@ -35,10 +37,10 @@ All the successfully grasped objects will be put under the table
 </div>
 
 2. Both one-grasp-per-image and continuous learning supported
-3. Camera on hand and random camera view
-4. NVIDIA Warp for state machine maintainance
+3. Camera on hand, top-down and random / equally distributed camera view on the hemisphere.
+4. NVIDIA Warp for state machine (state machine supported by NVIDIA [Warp](https://github.com/NVIDIA/warp)).
 5. Teleoperation environment (`AIR-v0-Tele`)
-6. Remote grasp agent to work around the environment conflict 
+6. Remote grasp agent to work around the environment conflict (see [vMF-Contact](https://github.com/YitianShi/vMF-Contact)))
 
 <div align="center">
 <img src="pic/pic.png" width=520"/ >
@@ -63,12 +65,10 @@ export LAB_PATH="${HOME}/IssacLab$LAB_PATH"
 # Add Isaac Lab's sh path for convenience when runing: isaaclab -p *.py
 alias isaaclab=/home/{user_name}/IsaacLab/isaaclab.sh
 ```
-Download robot and work cell from:
-```
-omniverse://nucleus.ifl.kit.edu/Users/yitian/models/models_ifl
-```
 
-and unzip under the project directory (please ask the author for the access right).
+## MetaGraspNet objects [available](https://github.com/maximiliangilles/MetaGraspNet/tree/master?tab=readme-ov-file)
+
+Objects are now adapted from [models](https://nx25922.your-storageshare.de/s/9KrFffzwoTmtapR). Unzip under the same directory and run `isaaclab -p urdf_converter.py` to convert all URDF files into USD files. We don't use original USD files since all the collision meshes are in convex hall, which are unrealistic.
 
 Create symbolic link to your isaac sim by:
 
@@ -77,11 +77,17 @@ ln -s path_to_isaac_sim _isaac_sim
 ```
 This is adapted from [tutourial for binary installation](https://isaac-sim.github.io/IsaacLab/main/source/setup/installation/binaries_installation.html) 
 
+Now Isaaclab can also be used with Isaac Sim installed by pip. Please check the above documentation for details.
+
+## VSCode development
+
 Now the vscode debugging is supported by pressing `Ctrl+Shift+P`, selecting `Tasks: Run Task` and run `setup_python_env`
 
 You can change to headless mode as you wish. The `num_envs` decide how many scenes will be set up on the same stage.
 
-!!If you cause core dump due to camera setting please run following command:
+## Potential Issues
+
+If you cause core dump due to camera setting please run following command:
 
 ```
 sudo prime-select nvidia
@@ -95,18 +101,6 @@ sudo prime-select query
 
 returns `on-demand`
 
-## MetaGraspNet objects [available](https://github.com/maximiliangilles/MetaGraspNet/tree/master?tab=readme-ov-file)
-
-Objects are now adapted from [models](https://nx25922.your-storageshare.de/s/9KrFffzwoTmtapR). Unzip under the same directory and run `isaaclab -p urdf_converter.py` to convert all URDF files into USD files.  
-
-(!!Now new Isaac Lab commit support direct importing urdf in the simulation, so this step not necessary anymore, only in case that the user need usd files.)
-
-
-Alternatively you can find the objects under: 
-
-```
-omniverse://nucleus.ifl.kit.edu/Users/yitian/models/models_ifl
-```
 
 
 
