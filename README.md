@@ -1,4 +1,4 @@
-# MetaIsaacGrasp: IsaacLab for Supersed / Reinforcement learning
+# MetaIsaacGrasp: IsaacLab for Supervised / Reinforcement learning
 
 A test-bench for grasp learning including: 
 
