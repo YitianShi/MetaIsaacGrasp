@@ -17,15 +17,9 @@ A data generation engine and test-bench for grasp learning including:
 
 [![Video Title](https://img.youtube.com/vi/XxlxfCCyMCE/0.jpg)](https://www.youtube.com/watch?v=XxlxfCCyMCE)
 
-<div align="center">
-<p float="left">
-  <img src="pic/rgb.png" width="300" />
-  <img src="pic/segmentation.png" width="300" /> 
-  <img src="pic/depth.png" width="300" />
-  <img src="pic/normals.png" width="300" />
-</p>
-<p>Captured images: RGB, Segmentation, Depth, Normals</p>
-</div>
+Our teleoperation may also supported by vMF-Contact to reach objects:
+
+[![Video Title](https://img.youtube.com/vi/SV-5fFmEhaA/0.jpg)](https://www.youtube.com/watch?v=SV-5fFmEhaA)
 
 ## New features compared to old version:
 
@@ -47,6 +41,15 @@ A data generation engine and test-bench for grasp learning including:
 <p>Current state</p>
 </div>
 
+<div align="center">
+<p float="left">
+  <img src="pic/rgb.png" width="300" />
+  <img src="pic/segmentation.png" width="300" /> 
+  <img src="pic/depth.png" width="300" />
+  <img src="pic/normals.png" width="300" />
+</p>
+<p>Captured images: RGB, Segmentation, Depth, Normals</p>
+</div>
 
 ## Getting started
 
