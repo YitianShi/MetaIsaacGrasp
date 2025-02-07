@@ -1,6 +1,6 @@
 # MetaIsaacGrasp: IsaacLab for Supervised / Reinforcement learning
 
-A data generation engine and test-bench for grasp learning including: 
+A data generation engine and test-bench for grasp learning, powered by [IsaacLab](https://github.com/isaac-sim/IsaacLab) and [MetaGraspNet](https://github.com/maximiliangilles/MetaGraspNet)(MGN) including: 
 
 - Data generation `AIR-v0-Data`
 - Policy evaluation `AIR-v0-Grasp`
