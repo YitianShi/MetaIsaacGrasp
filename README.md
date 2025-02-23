@@ -104,7 +104,18 @@ sudo prime-select query
 
 returns `on-demand`
 
+## Citation
 
+Please cite our paper which uses the whole framework for reference:
+
+```
+@article{shi2024vmf,
+  title={vMF-Contact: Uncertainty-aware Evidential Learning for Probabilistic Contact-grasp in Noisy Clutter},
+  author={Shi, Yitian and Welte, Edgar and Gilles, Maximilian and Rayyes, Rania},
+  journal={arXiv preprint arXiv:2411.03591},
+  year={2024}
+}
+```
 
 
 
