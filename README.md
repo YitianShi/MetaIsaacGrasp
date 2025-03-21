@@ -1,15 +1,33 @@
 # MetaIsaacGrasp: IsaacLab for Supervised / Reinforcement learning (Support IsaacLab 2.0 and IsaacSim 4.5)
 
-A data generation engine and test-bench for grasp learning, powered by [IsaacLab](https://github.com/isaac-sim/IsaacLab) and [MetaGraspNetv2](https://github.com/maximiliangilles/MetaGraspNet) (MGN) including: 
+A data generation engine and test bench for grasp learning, powered by [IsaacLab](https://github.com/isaac-sim/IsaacLab) and [MetaGraspNetv2](https://github.com/maximiliangilles/MetaGraspNet) (MGN) including: 
 
 - Data generation `AIR-v0-Data`
 - Policy evaluation `AIR-v0-Grasp`
 - Teleoperation `AIR-v0-Tele`
-- Reinforcement learning (In progress)`AIR-v0-RL`
+- Reinforcement learning `AIR-v0-RL`
 
-#### Click to watch the demo video (Inference with remote agent functionality by [vMF-Contact](https://github.com/YitianShi/vMF-Contact))
+### New features:
 
-(All the successfully grasped objects will be put under the table.)
+1. RL support with `stable baseline3` with `AIR-v0-RL`
+2. Support IsaacLab 2.0 and IsaacSim 4.5.0
+3. Both single-shot grasp execution and continuous learning supported
+4. Teleoperation environment `AIR-v0-Tele`
+5. Remote grasp agent to work around the environment conflict (see [vMF-Contact](https://github.com/YitianShi/vMF-Contact)))
+
+<div align="center">
+<img src="pic/pic.png" width=500"/ >
+<p>Grasp learning data collection and test bench</p>
+</div>
+
+<div align="center">
+  <img src="pic/rl.gif" style="width: 500px;" />
+  <p style="font-size: 12px;">Reinforcement learning</p>
+</div>
+
+#### Demo video (Inference with remote agent functionality by [vMF-Contact](https://github.com/YitianShi/vMF-Contact))
+
+(*Click to watch, all the successfully grasped objects will be put under the table.)
 
 [![Video Title](https://img.youtube.com/vi/FSXTWSLbo68/0.jpg)](https://www.youtube.com/watch?v=FSXTWSLbo68)
 
@@ -21,26 +39,12 @@ Our teleoperation may also supported by vMF-Contact to reach objects:
 
 [![Video Title](https://img.youtube.com/vi/SV-5fFmEhaA/0.jpg)](https://www.youtube.com/watch?v=SV-5fFmEhaA)
 
-## New features:
-
-1. Support IsaacLab 2.0 and IsaacSim 4.5.0
-2. Both one-grasp-per-image and continuous learning supported
-3. Camera on hand, top-down and random / equally distributed camera view on the hemisphere.
-4. NVIDIA Warp for state machine (state machine supported by NVIDIA [Warp](https://github.com/NVIDIA/warp)).
-5. Teleoperation environment (`AIR-v0-Tele`)
-6. Remote grasp agent to work around the environment conflict (see [vMF-Contact](https://github.com/YitianShi/vMF-Contact)))
-
-<div align="center">
-<img src="pic/pic.png" width=520"/ >
-<p>Current state</p>
-</div>
-
 <div align="center">
 <p float="left">
-  <img src="pic/rgb.png" width="300" />
-  <img src="pic/segmentation.png" width="300" /> 
-  <img src="pic/depth.png" width="300" />
-  <img src="pic/normals.png" width="300" />
+  <img src="pic/rgb.png" width="220" />
+  <img src="pic/segmentation.png" width="220" /> 
+  <img src="pic/depth.png" width="220" />
+  <img src="pic/normals.png" width="220" />
 </p>
 <p>Captured images: RGB, Segmentation, Depth, Normals</p>
 </div>
