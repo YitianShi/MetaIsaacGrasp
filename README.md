@@ -1,4 +1,4 @@
-# MetaIsaacGrasp: IsaacLab for Supervised / Reinforcement learning
+# MetaIsaacGrasp: IsaacLab for Supervised / Reinforcement learning (Support IsaacLab 2.0 and IsaacSim 4.5)
 
 A data generation engine and test-bench for grasp learning, powered by [IsaacLab](https://github.com/isaac-sim/IsaacLab) and [MetaGraspNetv2](https://github.com/maximiliangilles/MetaGraspNet) (MGN) including: 
 
@@ -21,15 +21,9 @@ Our teleoperation may also supported by vMF-Contact to reach objects:
 
 [![Video Title](https://img.youtube.com/vi/SV-5fFmEhaA/0.jpg)](https://www.youtube.com/watch?v=SV-5fFmEhaA)
 
-## New features compared to old version:
+## New features:
 
-1. Now support collision check and visualization of non-collision grasps (adapted from MGN)
-<div align="center">
-<img src="pic/pipeline.png"  width="700" / >
-
-<p>Non-collision grasp generation pipeline</p>
-</div>
-
+1. Support IsaacLab 2.0 and IsaacSim 4.5.0
 2. Both one-grasp-per-image and continuous learning supported
 3. Camera on hand, top-down and random / equally distributed camera view on the hemisphere.
 4. NVIDIA Warp for state machine (state machine supported by NVIDIA [Warp](https://github.com/NVIDIA/warp)).
