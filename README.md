@@ -1,40 +1,25 @@
-# MetaIsaacGrasp: IsaacLab for Supersed / Reinforcement learning
+# MetaIsaacGrasp: IsaacLab for Supervised / Reinforcement learning
 
-A test-bench for grasp learning including: 
+A data generation engine and test-bench for grasp learning, powered by [IsaacLab](https://github.com/isaac-sim/IsaacLab) and [MetaGraspNetv2](https://github.com/maximiliangilles/MetaGraspNet) (MGN) including: 
 
 - Data generation `AIR-v0-Data`
 - Policy evaluation `AIR-v0-Grasp`
 - Teleoperation `AIR-v0-Tele`
 - Reinforcement learning (In progress)`AIR-v0-Cont`
 
+#### Click to watch the demo video (Inference with remote agent functionality by [vMF-Contact](https://github.com/YitianShi/vMF-Contact))
+
+(All the successfully grasped objects will be put under the table.)
 
 [![Video Title](https://img.youtube.com/vi/FSXTWSLbo68/0.jpg)](https://www.youtube.com/watch?v=FSXTWSLbo68)
 
-<div align="center">
-<p float="left">
-  <img src="pic/rgb.png" width="300" />
-  <img src="pic/segmentation.png" width="300" /> 
-  <img src="pic/depth.png" width="300" />
-  <img src="pic/normals.png" width="300" />
-</p>
-<p>Captured images: RGB, Segmentation, Depth, Normals</p>
-</div>
+#### Teleoperation
 
-## Changes in migration to IsaacLab 4.5
+[![Video Title](https://img.youtube.com/vi/XxlxfCCyMCE/0.jpg)](https://www.youtube.com/watch?v=XxlxfCCyMCE)
 
-- Changed import names. Details at: [Migration Guide](https://isaac-sim.github.io/IsaacLab/main/source/refs/migration.html)
-- In file ```urdf_converter.py``` : Add parameters ```joint_drive=None,     
-            collider_type = "convex_decomposition"  ``` to ```UrdfConverterCfg``` object initilization, remove ```convex_decompose_mesh=True``` (see [UrdfConverterCfg](https://isaac-sim.github.io/IsaacLab/main/source/api/lab/isaaclab.sim.converters.html#isaaclab.sim.converters.UrdfConverter))
-- In file ```element_cfg.py```, in initialization of ```ImplicitActuatorCfg``` objects, changed parameters of name ```*_limit``` to ```*_limit_sim``` (see [ImplicitActuatorCfg](https://isaac-sim.github.io/IsaacLab/main/source/api/lab/isaaclab.actuators.html#isaaclab.actuators.ImplicitActuatorCfg))
-- Lowered stiffness and damping of the hand_e gripper
+Our teleoperation may also supported by vMF-Contact to reach objects:
 
-### Problems after migration
-
-- Some objects not loaded properly -> see warnings
-
-- Some objects behave very strangely (e.g. scissors) -> maybe change rigid properties?
-
-#### Click to watch the demo video (Inference with remote agent functionality by [vMF-Contact](https://github.com/YitianShi/vMF-Contact))
+[![Video Title](https://img.youtube.com/vi/SV-5fFmEhaA/0.jpg)](https://www.youtube.com/watch?v=SV-5fFmEhaA)
 
 ## New features compared to old version:
 
@@ -46,18 +31,25 @@ A test-bench for grasp learning including:
 </div>
 
 2. Both one-grasp-per-image and continuous learning supported
-3. Camera on hand and random camera view
-4. NVIDIA Warp for state machine maintainance
+3. Camera on hand, top-down and random / equally distributed camera view on the hemisphere.
+4. NVIDIA Warp for state machine (state machine supported by NVIDIA [Warp](https://github.com/NVIDIA/warp)).
 5. Teleoperation environment (`AIR-v0-Tele`)
-6. Remote grasp agent to work around the environment conflict 
+6. Remote grasp agent to work around the environment conflict (see [vMF-Contact](https://github.com/YitianShi/vMF-Contact)))
 
 <div align="center">
 <img src="pic/pic.png" width=520"/ >
 <p>Current state</p>
 </div>
 
-
-
+<div align="center">
+<p float="left">
+  <img src="pic/rgb.png" width="300" />
+  <img src="pic/segmentation.png" width="300" /> 
+  <img src="pic/depth.png" width="300" />
+  <img src="pic/normals.png" width="300" />
+</p>
+<p>Captured images: RGB, Segmentation, Depth, Normals</p>
+</div>
 
 ## Getting started
 
@@ -67,34 +59,23 @@ Make sure you already installed the Isaac-Sim in proper manner.
 Install Isaac Lab following the [installation tutourial](https://isaac-sim.github.io/IsaacLab/main/source/setup/installation/pip_installation.html#installing-isaac-sim). Please make sure that is under your home directory: `~/IsaacLab` and following environment variables are added into `.bashrc`:
 
 ```
-# Isaac Sim root directory
-export ISAACSIM_PATH="${HOME}/.local/share/ov/pkg/isaac-sim-4.2.0"
 # Isaac Sim python executable
 export ISAACSIM_PYTHON_EXE="${ISAACSIM_PATH}/python.sh"
-# Isaac Lab path
-export LAB_PATH="${HOME}/IssacLab$LAB_PATH"
 # Add Isaac Lab's sh path for convenience when runing: isaaclab -p *.py
 alias isaaclab=/home/{user_name}/IsaacLab/isaaclab.sh
 ```
-Download robot and work cell from:
-```
-omniverse://nucleus.ifl.kit.edu/Users/yitian/models/models_ifl
-```
 
-and unzip under the project directory (please ask the author for the access right).
+## MetaGraspNet objects [available](https://github.com/maximiliangilles/MetaGraspNet/tree/master?tab=readme-ov-file)
 
-Create symbolic link to your isaac sim by:
+Objects are now adapted from [models](https://nx25922.your-storageshare.de/s/9KrFffzwoTmtapR). Unzip under the same directory and run `isaaclab -p urdf_converter.py` to convert all URDF files into USD files (!!! Please use isaaclab 1.4 version for urdf conversion since this is now out-of-date for isaaclab 2.0!). We don't use original USD files since all the collision meshes are in convex hall, which are unrealistic.
 
-```
-ln -s path_to_isaac_sim _isaac_sim
-```
-This is adapted from [tutourial for binary installation](https://isaac-sim.github.io/IsaacLab/main/source/setup/installation/binaries_installation.html) 
+## VSCode development
 
-Now the vscode debugging is supported by pressing `Ctrl+Shift+P`, selecting `Tasks: Run Task` and run `setup_python_env`
+We provide the vscode debugging setup and setting file in ´.vscode´, please replace ´home/yitian´ with your home path.
 
-You can change to headless mode as you wish. The `num_envs` decide how many scenes will be set up on the same stage.
+## Potential Issues
 
-!!If you cause core dump due to camera setting please run following command:
+If you cause core dump due to camera setting please run following command:
 
 ```
 sudo prime-select nvidia
@@ -108,26 +89,15 @@ sudo prime-select query
 
 returns `on-demand`
 
-## MetaGraspNet objects [available](https://github.com/maximiliangilles/MetaGraspNet/tree/master?tab=readme-ov-file)
+## Citation
 
-Objects are now adapted from [models](https://nx25922.your-storageshare.de/s/9KrFffzwoTmtapR). Unzip under the same directory and run `isaaclab -p urdf_converter.py` to convert all URDF files into USD files.  
-
-(!!Now new Isaac Lab commit support direct importing urdf in the simulation, so this step not necessary anymore, only in case that the user need usd files.)
-
-
-Alternatively you can find the objects under: 
+Please cite our paper which uses the whole framework for reference:
 
 ```
-omniverse://nucleus.ifl.kit.edu/Users/yitian/models/models_ifl
+@article{shi2024vmf,
+  title={vMF-Contact: Uncertainty-aware Evidential Learning for Probabilistic Contact-grasp in Noisy Clutter},
+  author={Shi, Yitian and Welte, Edgar and Gilles, Maximilian and Rayyes, Rania},
+  journal={arXiv preprint arXiv:2411.03591},
+  year={2024}
+}
 ```
-
-
-
-
-
-
-
-
-
-
-
