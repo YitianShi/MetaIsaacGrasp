@@ -79,7 +79,7 @@ class AIREnvBase(ManagerBasedRLEnv):
         self.robot_entity_cfg = SceneEntityCfg(
             robot_name, joint_names=ARM_JOINT, body_names=ee_name
         )
-        self.objs = [self.scene[object_name + f"_{i}"] for i in range(num_objs)]
+        self.objs = self.scene["objs"]
 
         # initialize state machine
         self.sm_dt = torch.full((self.num_envs,), self.dt, device=self.device)
@@ -199,13 +199,10 @@ class AIREnvBase(ManagerBasedRLEnv):
         """
         # Grasp target recorder (position only)
         object_pos = torch.zeros((self.num_envs, num_objs, 4), device=self.device)
-
-        for id_obj in range(num_objs):
-            # Record the object position
-            object_pos[:, id_obj, :3] = self._get_obj_pos(id_obj)
-            # Record the object velocity
-            obj_vel_b = self._get_obj_vel(id_obj)
-            object_pos[:, id_obj, -1] = torch.norm(obj_vel_b, dim=-1)
+        object_pos[..., :3] = self.objs.data.object_com_pos_w.clone() - self.robot.data.root_state_w[:, None, 0:3].clone()
+        object_pos[..., 3] = torch.norm(
+            self.objs.data.object_com_vel_w.clone(), dim=-1
+        )
 
         # Object reachable
         # Initial condition: Check if the object is below a certain height limit
@@ -289,7 +286,7 @@ class AIREnvBase(ManagerBasedRLEnv):
 
             # Update the environment state to know whether the environment is graspable or stable
             self.update_env_state()
-
+    
             # Advance the state machine
             action_env = self._advance_state_machine()
 
@@ -508,9 +505,12 @@ class AIREnvBase(ManagerBasedRLEnv):
                 drop_pose_curr = self.obj_drop_pose.clone()
                 id_tensor = torch.tensor([i], device=self.device)
                 drop_pose_curr[:, :3] += self.scene.env_origins[i]
-                self.scene.rigid_objects[
-                    f"obj_{int(self.obj_chosen[i])}"
-                ].write_root_state_to_sim(drop_pose_curr, id_tensor)
+                drop_pose_curr = drop_pose_curr[:, None] 
+                self.scene.rigid_object_collections[f"objs"].write_object_state_to_sim(
+                    drop_pose_curr, 
+                    id_tensor, 
+                    self.obj_chosen[i].unsqueeze(0),
+                    )
                 print(
                     f"[INFO] Env {i} succeeded in "
                     + f"Episode {self.epi_step_count[i, 0]} "
@@ -641,16 +641,16 @@ class AIREnvBase(ManagerBasedRLEnv):
 
     def _get_obj_pos(self, id_obj):
         root_pose_w = self.robot.data.root_state_w[:, 0:3].clone()
-        return self.objs[id_obj].data.root_state_w[:, 0:3].clone() - root_pose_w
+        return self.objs.data.object_com_pos_w.clone()[:, id_obj] - root_pose_w
 
     def _get_obj_pose(self, id_obj, id_env):
         root_pose_w = self.robot.data.root_state_w[id_env, 0:3].clone()
-        obj_pos = self.objs[id_obj].data.root_state_w[id_env, 0:3].clone() - root_pose_w
-        obj_quat = self.objs[id_obj].data.root_state_w[id_env, 3:7].clone()
+        obj_pos = self.objs.data.object_com_pos_w[id_env, id_obj].clone() - root_pose_w
+        obj_quat = self.objs.data.object_com_quat_w[id_env, id_obj].clone()
         return torch.cat((obj_pos, obj_quat), -1)
 
     def _get_obj_vel(self, id_obj):
-        return self.objs[id_obj].data.root_state_w[:, 7:].clone()
+        return self.objs.data.object_com_vel_w[:, id_obj].clone()
 
     def _get_ee_pose(self):
         view_pos_rob = self.ee_frame.data.target_pos_source.clone()[:, 0, :]

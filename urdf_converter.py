@@ -1,7 +1,6 @@
 ## !!!!! Please use Isaaclab 1.4 with Isaac sim 4.2.0 to run this script otherwise some objects may not be properly converted !!!!!
 
 
-
 from __future__ import annotations
 
 """Launch Isaac Sim Simulator first."""

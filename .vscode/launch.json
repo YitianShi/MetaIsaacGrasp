@@ -63,10 +63,10 @@
                 //"CUDA_VISIBLE_DEVICES":"1,2,3"
             },
             "args": [
-                "--num_envs", "4",
+                "--num_envs", "1",
                 "--enable_cameras",
                 "--seed", "1", 
-                "--task", "AIR-v0-Data"
+                "--task", "AIR-v0-Tele"
                 //"--headless",
             ],
         },

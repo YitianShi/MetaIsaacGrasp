@@ -22,7 +22,7 @@ from scipy.spatial.transform import Rotation as R
 
 # from isaaclab.sensors.camera import Camera, PinholeCameraCfg
 from isaaclab.actuators import ImplicitActuatorCfg
-from isaaclab.assets import ArticulationCfg, AssetBaseCfg, RigidObjectCfg
+from isaaclab.assets import ArticulationCfg, AssetBaseCfg, RigidObjectCfg, RigidObjectCollectionCfg
 from isaaclab.controllers import DifferentialIKControllerCfg
 from isaaclab.sensors import CameraCfg
 from isaaclab.utils.math import *
@@ -97,7 +97,7 @@ STATE_MACHINE = {
 # obj_exclude = [ '003', '033', '030', '055', '074', '078', '018',
 #                 "037", "032", "041", "071", "076", "070", "068",
 #                 "038", "072", "035"]
-obj_exclude = []
+obj_exclude = ["033"]
 
 test_obj = False
 if test_obj:
@@ -391,8 +391,8 @@ UR10e_HAND_E_CFG = ArticulationCfg(
         "gripper": ImplicitActuatorCfg(
             joint_names_expr=[*ROBOTIQ_HAND_E_JOINT_CFG["default"]],
             stiffness=7000.,#1e10,
-            damping=100.,#1e3,
-            #friction=0.8
+            damping=10.,#1e3,
+            friction=0.8
         ),
     },
 )
@@ -410,7 +410,7 @@ ee_name = end_effector_frame_name[robot_name]
 rigid_props = sim_utils.RigidBodyPropertiesCfg(
     rigid_body_enabled=True,
     disable_gravity=False,
-    max_depenetration_velocity=1.0,
+    max_depenetration_velocity=4.0,
     linear_damping = .1,
     angular_damping = .1,
     max_contact_impulse = float("inf"),
@@ -426,7 +426,7 @@ TABLE_CFG = AssetBaseCfg(
         usd_path=f"{USD_PATH}/Workspace/Table_sim.usd",
         rigid_props=sim_utils.RigidBodyPropertiesCfg(
             disable_gravity=True,
-            max_depenetration_velocity=.01,
+            max_depenetration_velocity=10,
             linear_damping = 1,
             angular_damping = 2,
             max_contact_impulse = float("inf"),

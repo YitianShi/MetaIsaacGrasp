@@ -64,12 +64,14 @@ class CellSceneCfg(InteractiveSceneCfg):
 
         super().__init__(**kwargs)
         
-        for i in range(num_objs):
-            exec(
-                f"self.obj_{i}: RigidObjectCfg = OBJ_CFGs[{i}]"
-                + '.replace(prim_path="{ENV_REGEX_NS}/obj_"+'
-                + f"str({i}))"
+        self.objs: RigidObjectCollectionCfg = RigidObjectCollectionCfg(
+        rigid_objects={
+            f"obj_{i}": OBJ_CFGs[i].replace(
+                prim_path="{ENV_REGEX_NS}/obj_"+str(i)
             )
+            for i in range(num_objs)
+        },
+        )
 
         """Random camera initialization."""
         if not disable_camera:
@@ -276,32 +278,48 @@ def reset_root_state_uniform(
     # extract the used quantities (to enable type-hinting)
     asset = env.scene[asset_cfg.name]
     # get default root state
-    root_states = asset.data.default_root_state[env_ids].clone()
+    root_states = asset.data.default_object_state[env_ids].clone()
+    env_num, obj_num = root_states.size(0), root_states.size(1)
 
     # poses
     range_list = [pose_range.get(key, (0.0, 0.0)) for key in ["x", "y", "z", "roll", "pitch", "yaw"]]
     ranges = torch.tensor(range_list, device=asset.device)
-    rand_samples = math_utils.sample_uniform(ranges[:, 0], ranges[:, 1], (len(env_ids), 6), device=asset.device)
+    rand_samples = math_utils.sample_uniform(
+        ranges[:, 0], 
+        ranges[:, 1], 
+        (env_num, obj_num, 6), 
+        device=asset.device)
 
-    positions = root_states[:, 0:3] + env.scene.env_origins[env_ids] + rand_samples[:, 0:3]
+    positions = (
+        root_states[..., 0:3] 
+        + env.scene.env_origins[env_ids][:, None].repeat(1, root_states.size(1), 1) 
+        + rand_samples[..., 0:3]
+        )
 
     # random object dropped on the ground
     if env.random_drop_obj:
-        z_mask = torch.bernoulli(torch.full((len(env_ids),), 0.2, device=asset.device)).bool()
-        positions[z_mask, -1] = 0.1
+        z_mask = torch.bernoulli(torch.full((env_num, obj_num), 0.2, device=asset.device)).bool()
+        z_mask = z_mask[..., None].repeat(1, 1, 3)
+        positions[z_mask] = 0.1
 
-    orientations_delta = math_utils.quat_from_euler_xyz(rand_samples[:, 3], rand_samples[:, 4], rand_samples[:, 5])
-    orientations = math_utils.quat_mul(root_states[:, 3:7], orientations_delta)
+    orientations_delta = math_utils.quat_from_euler_xyz(
+        rand_samples[..., 3], rand_samples[..., 4], rand_samples[..., 5])
+    orientations = math_utils.quat_mul(root_states[..., 3:7], orientations_delta)
+    
     # velocities
     range_list = [velocity_range.get(key, (0.0, 0.0)) for key in ["x", "y", "z", "roll", "pitch", "yaw"]]
     ranges = torch.tensor(range_list, device=asset.device)
-    rand_samples = math_utils.sample_uniform(ranges[:, 0], ranges[:, 1], (len(env_ids), 6), device=asset.device)
+    rand_samples = math_utils.sample_uniform(
+        ranges[:, 0], 
+        ranges[:, 1], 
+        (env_num, obj_num, 6),  
+        device=asset.device)
 
-    velocities = root_states[:, 7:13] + rand_samples
+    velocities = root_states[..., 7:13] + rand_samples
 
     # set into the physics simulation
-    asset.write_root_pose_to_sim(torch.cat([positions, orientations], dim=-1), env_ids=env_ids)
-    asset.write_root_velocity_to_sim(velocities, env_ids=env_ids)
+    asset.write_object_pose_to_sim(torch.cat([positions, orientations], dim=-1), env_ids=env_ids)
+    asset.write_object_velocity_to_sim(velocities, env_ids=env_ids)
 
 
 def reset_root_state_sphere(
@@ -364,28 +382,23 @@ class EventCfg:
                 func=reset_robot_to_default,
                 mode="reset",
             )
-        
-            for i in range(num_objs):
-                setattr(
-                    self,
-                    f"reset_obj_pos_{i}",
-                    EventTerm(
-                        func=reset_root_state_uniform,
-                        mode="reset",
-                        params={
-                            "pose_range": {
-                                "x": ee_obj_default[0],
-                                "y": ee_obj_default[1],
-                                "z": ee_obj_default[2],
-                                "roll": (-1.0, 1.0),
-                                "pitch": (-1.0, 1.0),
-                                "yaw": (-1.0, 1.0),
-                            },
-                            "velocity_range": {},
-                            "asset_cfg": SceneEntityCfg(f"obj_{i}"),
-                        },
-                    ),
-                )
+            self.reset_obj_pos = EventTerm(
+                func=reset_root_state_uniform,
+                mode="reset",
+                params={
+                    "pose_range": {
+                        "x": ee_obj_default[0],
+                        "y": ee_obj_default[1],
+                        "z": ee_obj_default[2],
+                        "roll": (-1.0, 1.0),
+                        "pitch": (-1.0, 1.0),
+                        "yaw": (-1.0, 1.0),
+                    },
+                    "velocity_range": {},
+                    "asset_cfg": SceneEntityCfg(f"objs"),
+                },
+            )
+                
         else:
             for i in range(num_objs):
                 self.reset_obj_pos = EventTerm(
