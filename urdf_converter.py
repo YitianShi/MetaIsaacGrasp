@@ -1,31 +1,6 @@
-# Copyright (c) 2022-2024, The ORBIT Project Developers.
-# All rights reserved.
-#
-# SPDX-License-Identifier: BSD-3-Clause
-
-"""
-Utility to convert a URDF into USD format.
-
-Unified Robot Description Format (URDF) is an XML file format used in ROS to describe all elements of
-a robot. For more information, see: http://wiki.ros.org/urdf
-
-This script uses the URDF importer extension from Isaac Sim (``omni.isaac.urdf_importer``) to convert a
-URDF asset into USD format. It is designed as a convenience script for command-line use. For more
-information on the URDF importer, see the documentation for the extension:
-https://docs.omniverse.nvidia.com/app_isaacsim/app_isaacsim/ext_omni_isaac_urdf.html
+## !!!!! Please use Isaaclab 1.4 with Isaac sim 4.2.0 to run this script otherwise some objects may not be properly converted !!!!!
 
 
-positional arguments:
-  input               The path to the input URDF file.
-  output              The path to store the USD file.
-
-optional arguments:
-  -h, --help                Show this help message and exit
-  --merge-joints            Consolidate links that are connected by fixed joints. (default: False)
-  --fix-base                Fix the base to where it is imported. (default: False)
-  --make-instanceable       Make the asset instanceable for efficient cloning. (default: False)
-
-"""
 
 from __future__ import annotations
 
