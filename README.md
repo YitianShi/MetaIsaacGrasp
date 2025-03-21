@@ -5,7 +5,7 @@ A data generation engine and test-bench for grasp learning, powered by [IsaacLab
 - Data generation `AIR-v0-Data`
 - Policy evaluation `AIR-v0-Grasp`
 - Teleoperation `AIR-v0-Tele`
-- Reinforcement learning (In progress)`AIR-v0-Cont`
+- Reinforcement learning (In progress)`AIR-v0-RL`
 
 #### Click to watch the demo video (Inference with remote agent functionality by [vMF-Contact](https://github.com/YitianShi/vMF-Contact))
 

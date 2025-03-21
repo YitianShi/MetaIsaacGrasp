@@ -35,7 +35,7 @@ def perpendicular_grasp_orientation(normal, tensor=True):
     # Check for parallel or anti-parallel vectors
     if rotation_axis_norm.item() < 1e-4:
         # If the dot product is negative, they are anti-parallel (180-degree rotation needed)
-        quaternion = torch.tensor(ee_grasp_quat_default, device=normal.device)
+        quaternion = torch.tensor(EE_GRASP_QUAT_DEFAULT, device=normal.device)
     else:
         # Calculate the angle for rotation
         cos_theta = torch.dot(default_direction, normal)

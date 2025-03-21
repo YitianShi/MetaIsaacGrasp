@@ -4,9 +4,9 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 """
-This script demonstrates how to use the differential inverse kinematics controller with the simulator.
+This script demonstrates how to use the differential inverse kinematics CONTROLLER with the simulator.
 
-The differential IK controller can be configured in different modes. It uses the Jacobians computed by
+The differential IK CONTROLLER can be configured in different modes. It uses the Jacobians computed by
 PhysX. This helps perform parallelized computation of the inverse kinematics.
 
 .. code-block:: bash
@@ -24,7 +24,7 @@ from isaaclab.app import AppLauncher
 import numpy as np
 
 # add argparse arguments
-parser = argparse.ArgumentParser(description="Tutorial on using the differential IK controller.")
+parser = argparse.ArgumentParser(description="Tutorial on using the differential IK CONTROLLER.")
 parser.add_argument("--robot", type=str, default="ur10", help="Name of the robot.")
 parser.add_argument("--num_envs", type=int, default=1, help="Number of environments to spawn.")
 # append AppLauncher cli args
@@ -62,16 +62,16 @@ from pathlib import Path
 HOME_PATH = Path(os.getcwd())
 USD_PATH = os.path.join(HOME_PATH, "models")
 
-robot_pos = (0.1, 0.6, 0.925) # robot position
-bow_angle = 0.1 # bow angle of the robot
-down_ration = .75 # down ration of the robot
-wrist_lift = .5 # wrist lift of the robot
-approach_distance = 0.05 # distance to approach the object before grasp
-lift_height = 0.4 # height to lift the object
-grasp_distance = 0.1 # apprach distance before grasp the object
-distance_limit = 2e-2 # distance limit for robot to reach the goal before state transition
-ee_vel_limit = 5e-2 # velocity limit for robot to reach the goal before state transition
-ee_grasp_quat_default = (.5, -0.5, 0.5, -0.5) # default quaternion after grasping
+ROBOT_POS = (0.1, 0.6, 0.925) # robot position
+BOW_ANGLE = 0.1 # bow angle of the robot
+DOWN_RATION = .75 # down ration of the robot
+WRIST_LIFT = .5 # wrist lift of the robot
+APPROACH_DISTANCE = 0.05 # distance to approach the object before grasp
+LIFT_HEIGHT = 0.4 # height to lift the object
+GRASP_DISTANCE = 0.1 # apprach distance before grasp the object
+DISTANCE_LIMIT = 2e-2 # distance limit for robot to reach the goal before state transition
+EE_VEL_LIMIT = 5e-2 # velocity limit for robot to reach the goal before state transition
+EE_GRASP_QUAT_DEFAULT = (.5, -0.5, 0.5, -0.5) # default quaternion after grasping
 
 ROBOTIQ_HAND_E_JOINT_CFG = {
             "default": {
@@ -89,9 +89,9 @@ ROBOTIQ_HAND_E_JOINT_CFG = {
         }
 ARM_JOINT = {
     "shoulder_pan_joint": 0.,
-    "shoulder_lift_joint": -np.pi * down_ration + bow_angle,
-    "elbow_joint": np.pi * down_ration,
-    "wrist_1_joint": -np.pi / 2 - bow_angle - wrist_lift,
+    "shoulder_lift_joint": -np.pi * DOWN_RATION + BOW_ANGLE,
+    "elbow_joint": np.pi * DOWN_RATION,
+    "wrist_1_joint": -np.pi / 2 - BOW_ANGLE - WRIST_LIFT,
     "wrist_2_joint": -np.pi / 2,
     "wrist_3_joint": np.pi,
 }
@@ -204,7 +204,7 @@ class TableTopSceneCfg(InteractiveSceneCfg):
                 collision_props=sim_utils.CollisionPropertiesCfg(collision_enabled=True),
                 activate_contact_sensors=False,
             ),
-            init_state=ArticulationCfg.InitialStateCfg(joint_pos=JOINT_SETUP),#, pos=robot_pos),
+            init_state=ArticulationCfg.InitialStateCfg(joint_pos=JOINT_SETUP),#, pos=ROBOT_POS),
             actuators={
                 "arm": ImplicitActuatorCfg(
                     joint_names_expr=list(ARM_JOINT.keys()),
@@ -234,7 +234,7 @@ def run_simulator(sim: sim_utils.SimulationContext, scene: InteractiveScene):
     # note: we only do this here for readability.
     robot = scene["robot"]
 
-    # Create controller
+    # Create CONTROLLER
     diff_ik_cfg = DifferentialIKControllerCfg(command_type="pose", use_relative_mode=False, ik_method="dls")
     diff_ik_controller = DifferentialIKController(diff_ik_cfg, num_envs=scene.num_envs, device=sim.device)
 
@@ -293,7 +293,7 @@ def run_simulator(sim: sim_utils.SimulationContext, scene: InteractiveScene):
             # reset actions
             ik_commands[:] = ee_goals[current_goal_idx]
             joint_pos_des = joint_pos[:, robot_entity_cfg.joint_ids].clone()
-            # reset controller
+            # reset CONTROLLER
             diff_ik_controller.reset()
             diff_ik_controller.set_command(ik_commands)
             # change goal
@@ -317,7 +317,7 @@ def run_simulator(sim: sim_utils.SimulationContext, scene: InteractiveScene):
             # reset actions
             ik_commands[:] = ee_goals[current_goal_idx]
             joint_pos_des = joint_pos[:, robot_entity_cfg.joint_ids].clone()
-            # reset controller
+            # reset CONTROLLER
             diff_ik_controller.reset()
             diff_ik_controller.set_command(ik_commands)
         elif count == 500:
@@ -325,7 +325,7 @@ def run_simulator(sim: sim_utils.SimulationContext, scene: InteractiveScene):
             # reset actions
             ik_commands[:] = ee_goals[current_goal_idx]
             joint_pos_des = joint_pos[:, robot_entity_cfg.joint_ids].clone()
-            # reset controller
+            # reset CONTROLLER
             diff_ik_controller.reset()
             diff_ik_controller.set_command(ik_commands)
 

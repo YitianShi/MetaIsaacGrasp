@@ -9,7 +9,7 @@ from isaac_env.utils import *
 # initialize warp
 from isaac_env.wp_cfg import *
 from datetime import datetime
-from stable_baselines3 import SAC
+from stable_baselines3 import SAC, PPO
 from stable_baselines3.common.callbacks import CheckpointCallback
 from stable_baselines3.common.logger import configure
 from stable_baselines3.common.vec_env import VecNormalize
@@ -17,6 +17,7 @@ from stable_baselines3.common.vec_env import VecNormalize
 from isaaclab.utils.io import dump_pickle, dump_yaml
 from isaaclab.utils.dict import print_dict
 from isaaclab_rl.sb3 import Sb3VecEnvWrapper, process_sb3_cfg
+from isaac_env.agents.custom_extractor import CustomExtractor
 
 class AIRPickSm:
     """A simple state machine in a robot's task space to pick and lift an object.
@@ -48,7 +49,7 @@ class AIRPickSm:
         self.env_idx = torch.arange(args_cli.num_envs, dtype=torch.int64, device=self.device)
         self.inference_criteria = ~torch.empty(self.num_envs, dtype=torch.bool, device=self.device)
 
-        if use_sb3:
+        if USE_SB3:
             self._rlg_train(args_cli)
 
         self.teleop = "Tele" in args_cli.task
@@ -59,7 +60,7 @@ class AIRPickSm:
         
             # parse configuration
         env_cfg = parse_env_cfg(
-            args_cli.task, use_gpu=not args_cli.cpu, num_envs=args_cli.num_envs, use_fabric=not args_cli.disable_fabric
+            args_cli.task, self.device, num_envs=args_cli.num_envs, use_fabric=not args_cli.disable_fabric
         )
         agent_cfg = load_cfg_from_registry(args_cli.task, "sb3_cfg_entry_point")
 
@@ -111,21 +112,32 @@ class AIRPickSm:
                 clip_reward=np.inf,
             )
 
-        self.agent = SAC(policy_arch, self.env, verbose=1, **agent_cfg)
+        self.agent = PPO( # AC共享特征提取
+            policy="MultiInputPolicy", # 多输入策略
+            env=self.env,
+            verbose=1,
+            policy_kwargs=dict(
+                features_extractor_class=CustomExtractor,
+                features_extractor_kwargs={},
+                net_arch={'pi': [256, 256, 128, 64, 7], 'vf': [256, 256, 128, 64, 1]}, # 最后这个1可以不写
+            ),
+            **agent_cfg
+        )
+
 
         # configure the logger
         new_logger = configure(self.log_dir, ["stdout", "tensorboard"])
         self.agent.set_logger(new_logger)
 
         # callbacks for agent
-        self.checkpoint_callback = CheckpointCallback(save_freq=1000, save_path=self.log_dir, name_prefix="model", verbose=2)
+        self.checkpoint_callback = CheckpointCallback(save_freq=2000, save_path=self.log_dir, name_prefix="model", verbose=2)
         
     
     def init_run(self):
         """Initialize the simulation loop."""
         # Environment step
         obs_buf = self.env.reset()
-        self.obs_buf = obs_buf if use_sb3 else obs_buf[0]
+        self.obs_buf = obs_buf if USE_SB3 else obs_buf[0]
         self.env_unwrapped.update_env_state()
         print("-" * 80)
         print("[INFO]: Reset finish...")
@@ -151,35 +163,46 @@ class AIRPickSm:
         # Get the envs that are in the choose object state
         ids = self.env_idx.clone()[self.inference_criteria]
             
-        if not use_sb3:
+        if not USE_SB3:
             actions = self.env_unwrapped.get_action(ids, self.obs_buf)
         else:
             # Use policy if not demo:
             # Get the camera data
-            rgbs = self.obs_buf[:3]
-            depths = self.obs_buf[3:]
-            # Get the point cloud data
-            pcds = self.env_unwrapped.get_pointcloud_map(ids) if get_pcd else None
+            actions = self.policy(ids, get_pcd)
 
-            # Get the grasp pose from the policy
-            actions = self.policy(rgbs, depths, pcds, ids)
 
             if True:
-                for id, grasp_pose, rgb, depth in zip(ids, actions[:, :7], rgbs, depths):
+                for id, grasp_pose, rgb, depth in zip(ids, actions[:, :7], rgbs = self.obs_buf['rgb'], depths = self.obs_buf['distance_to_image_plane']):
                     self.env_unwrapped.save_data(id, grasp_pose, None, rgb, depth)
         
         return actions
 
     
-    def policy(self, rgbs, depths, pcds, view_poses_rob, ids):
+    def policy(self, ids, get_pcd, view_poses_rob=None):
         """
         Get the grasp pose from the policy
         """
+        rgbs = self.obs_buf['rgb'][ids]
+        depths = self.obs_buf['distance_to_image_plane'][ids]
+        pcds = self.obs_buf['pcd'][ids] if get_pcd else None
+        rgbs = rgbs.float() / 255.0
+        depths = (depths - depths.min()) / (depths.max() - depths.min() + 1e-8)
+
+        obs_dict = {
+            "rgb": rgbs.to(self.device),
+            "distance_to_image_plane": depths.to(self.device),
+        }
+
+        if pcds is not None:
+            obs_dict["pcd"] = pcds.to(self.device)
+        
         # Get the grasp pose from the policy
         grasp_pose, gripper_state_con = None, None # TODO: Implement the policy
+        actions, _ = self.agent.predict(obs_dict, deterministic=True) 
+        grasp_pose, gripper_state_con = actions[:, :7], actions[:, 7] 
 
         return torch.cat((grasp_pose, gripper_state_con), dim=-1) if continuous_control else grasp_pose
-    
+
 
     @property
     def env_unwrapped(self):

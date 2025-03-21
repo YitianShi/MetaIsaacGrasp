@@ -28,7 +28,7 @@ class PickSmLimitTime:
     approach = wp.constant(1.5)
     grasp = wp.constant(.5)
     lift = wp.constant(2.5)
-    execute = wp.constant(2.)
+    execute = wp.constant(20.)
     frame = wp.constant(0.1)
     
 @wp.func
@@ -40,7 +40,7 @@ def dist_transforms(a: wp.transform, b: wp.transform):
 def approach_pose_from_grasp_pose(grasp_pose: wp.transform):
     """Compute the approach pose from the grasp pose, 
     approach pose have the same rotation as grasp pose but have certain distance in the opposite direction to the grasp pose."""
-    v2 = wp.quat_rotate(wp.transform_get_rotation(grasp_pose), wp.vec3(0.0, approach_distance, 0.0))
+    v2 = wp.quat_rotate(wp.transform_get_rotation(grasp_pose), wp.vec3(0.0, APPROACH_DISTANCE, 0.0))
     return wp.transform(wp.transform_get_translation(grasp_pose) - v2,
                         wp.transform_get_rotation(grasp_pose))
 
@@ -138,7 +138,7 @@ def infer_state_machine_tele(
         successive_grasp_failure[tid] = wp.add(successive_grasp_failure[tid], 1.)
 
         # check the termination conditions
-        if (successive_grasp_failure[tid] == successive_grasp_failure_limit) or (env_reachable[tid] == False) or (step_count_wp[tid] == step_total):
+        if (successive_grasp_failure[tid] == SUCCESSIVE_GRASP_FAILURE_LIMIT) or (env_reachable[tid] == False) or (step_count_wp[tid] == STEP_TOTAL):
             sm_state[tid] = PickSmState.init_env
         else:
             sm_state[tid] = PickSmState.start
@@ -169,7 +169,7 @@ def infer_state_machine_tele(
         des_ee_pose[tid] = approach_pose_from_grasp_pose(grasp_pose[tid])
         des_gripper_state[tid] = GripperState.OPEN
         # error between current and desired ee pose below threshold
-        if dist_transforms(ee_pose[tid], des_ee_pose[tid])<distance_limit and ee_vel[tid]<ee_vel_limit:
+        if dist_transforms(ee_pose[tid], des_ee_pose[tid])<DISTANCE_LIMIT and ee_vel[tid]<EE_VEL_LIMIT:
             # move to next state and reset wait time
             sm_state[tid] = PickSmState.approach
         # wait for a while
@@ -183,7 +183,7 @@ def infer_state_machine_tele(
         des_gripper_state[tid] = GripperState.OPEN
         # Error between current and desired ee pose below threshold
         # Or the approaching time is longer than the limit
-        if dist_transforms(ee_pose[tid], des_ee_pose[tid])<distance_limit and ee_vel[tid]<ee_vel_limit or sm_wait_time[tid] >= PickSmLimitTime.approach:
+        if dist_transforms(ee_pose[tid], des_ee_pose[tid])<DISTANCE_LIMIT and ee_vel[tid]<EE_VEL_LIMIT or sm_wait_time[tid] >= PickSmLimitTime.approach:
             # move to next state and reset wait time
             sm_state[tid] = PickSmState.execute
             sm_wait_time[tid] = 0.0
@@ -236,7 +236,7 @@ def infer_state_machine_disc(
         successive_grasp_failure[tid] = wp.add(successive_grasp_failure[tid], 1.)
 
         # check the termination conditions
-        if (successive_grasp_failure[tid] == successive_grasp_failure_limit) or (env_reachable[tid] == False) or (step_count_wp[tid] == step_total):
+        if (successive_grasp_failure[tid] == SUCCESSIVE_GRASP_FAILURE_LIMIT) or (env_reachable[tid] == False) or (step_count_wp[tid] == STEP_TOTAL):
             sm_state[tid] = PickSmState.init_env
         else:
             sm_state[tid] = PickSmState.start
@@ -270,7 +270,7 @@ def infer_state_machine_disc(
         des_ee_pose[tid] = approach_pose_from_grasp_pose(grasp_pose[tid])
         des_gripper_state[tid] = GripperState.OPEN
         # error between current and desired ee pose below threshold
-        if dist_transforms(ee_pose[tid], des_ee_pose[tid])<distance_limit and ee_vel[tid]<ee_vel_limit:
+        if dist_transforms(ee_pose[tid], des_ee_pose[tid])<DISTANCE_LIMIT and ee_vel[tid]<EE_VEL_LIMIT:
             # move to next state and reset wait time
             sm_state[tid] = PickSmState.approach
         # wait for a while
@@ -284,7 +284,7 @@ def infer_state_machine_disc(
         des_gripper_state[tid] = GripperState.OPEN
         # Error between current and desired ee pose below threshold
         # Or the approaching time is longer than the limit
-        if dist_transforms(ee_pose[tid], des_ee_pose[tid])<distance_limit and ee_vel[tid]<ee_vel_limit or sm_wait_time[tid] >= PickSmLimitTime.approach:
+        if dist_transforms(ee_pose[tid], des_ee_pose[tid])<DISTANCE_LIMIT and ee_vel[tid]<EE_VEL_LIMIT or sm_wait_time[tid] >= PickSmLimitTime.approach:
             # move to next state and reset wait time
             sm_state[tid] = PickSmState.grasp
             sm_wait_time[tid] = 0.0
@@ -301,11 +301,11 @@ def infer_state_machine_disc(
 
     elif state == PickSmState.lift:
         # robot lifts the object
-        grasp_pos = wp.add(wp.transform_get_translation(grasp_pose[tid]), wp.vec3(0.0, 0.0, lift_height))
+        grasp_pos = wp.add(wp.transform_get_translation(grasp_pose[tid]), wp.vec3(0.0, 0.0, LIFT_HEIGHT))
         grasp_rot = wp.transform_get_rotation(grasp_pose[tid])
         des_ee_pose[tid] = wp.transform(grasp_pos, grasp_rot)
         des_gripper_state[tid] = GripperState.CLOSE
-        if dist_transforms(ee_pose[tid], des_ee_pose[tid])<distance_limit and ee_vel[tid]<ee_vel_limit or sm_wait_time[tid] >= PickSmLimitTime.lift:
+        if dist_transforms(ee_pose[tid], des_ee_pose[tid])<DISTANCE_LIMIT and ee_vel[tid]<EE_VEL_LIMIT or sm_wait_time[tid] >= PickSmLimitTime.lift:
             # move to next state and reset wait time
             sm_state[tid] = PickSmState.init
 
@@ -360,7 +360,7 @@ def infer_state_machine_con(
         successive_grasp_failure[tid] = wp.add(successive_grasp_failure[tid], 1.)
 
         # check the termination conditions
-        if (successive_grasp_failure[tid] == successive_grasp_failure_limit) or (env_reachable[tid] == False) or (step_count_wp[tid] == step_total):
+        if (successive_grasp_failure[tid] == SUCCESSIVE_GRASP_FAILURE_LIMIT) or (env_reachable[tid] == False) or (step_count_wp[tid] == STEP_TOTAL):
             sm_state[tid] = PickSmState.init_env
         else:
             sm_state[tid] = PickSmState.start
@@ -377,11 +377,9 @@ def infer_state_machine_con(
         des_gripper_state[tid] = GripperState.OPEN
         # when the environment is stable, 
         # robot starts to take photo and choose the object
-        if env_stable[tid] == True:
+        if env_stable[tid] == True or sm_wait_time[tid] >= PickSmLimitTime.start:
             sm_state[tid] = PickSmState.execute
             sm_wait_time[tid] = 0.0
-        elif sm_wait_time[tid] >= PickSmLimitTime.start:
-            sm_state[tid] = PickSmState.init
     
     elif state == PickSmState.execute:
         # robot start to execute the grasp based on continuous control
@@ -397,18 +395,18 @@ def infer_state_machine_con(
         else:
             frame_wait_time[tid] = frame_wait_time[tid] + dt[tid]
         if sm_wait_time[tid] >= PickSmLimitTime.execute:
-            sm_state[tid] = PickSmState.lift
-            advance_frame[tid] = False
-            sm_wait_time[tid] = 0.0
-            frame_wait_time[tid] = 0.0
+    #         sm_state[tid] = PickSmState.lift
+    #         advance_frame[tid] = False
+    #         sm_wait_time[tid] = 0.0
+    #         frame_wait_time[tid] = 0.0
 
-    elif state == PickSmState.lift:
-        # robot lifts the object
-        grasp_pos = wp.add(wp.transform_get_translation(grasp_pose[tid]), wp.vec3(0.0, 0.0, lift_height))
-        des_ee_pose[tid] = wp.transform(grasp_pos, ee_quat_default[tid])
-        des_gripper_state[tid] = GripperState.CLOSE
-        if dist_transforms(ee_pose[tid], des_ee_pose[tid])<distance_limit and ee_vel[tid]<ee_vel_limit or sm_wait_time[tid] >= PickSmLimitTime.lift:
-            # move to next state and reset wait time
+    # elif state == PickSmState.lift:
+    #     # robot lifts the object
+    #     grasp_pos = wp.add(wp.transform_get_translation(grasp_pose[tid]), wp.vec3(0.0, 0.0, LIFT_HEIGHT))
+    #     des_ee_pose[tid] = wp.transform(grasp_pos, ee_quat_default[tid])
+    #     des_gripper_state[tid] = GripperState.CLOSE
+    #     if dist_transforms(ee_pose[tid], des_ee_pose[tid])<DISTANCE_LIMIT and ee_vel[tid]<EE_VEL_LIMIT or sm_wait_time[tid] >= PickSmLimitTime.lift:
+    #         # move to next state and reset wait time
             sm_state[tid] = PickSmState.init
         
     # increment wait time

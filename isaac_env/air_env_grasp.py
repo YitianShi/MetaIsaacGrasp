@@ -109,7 +109,7 @@ class AIREnvGrasp(AIREnvBase):
         return torch.cat((des_ee_pose, self.des_gripper_state.unsqueeze(-1)), -1)
     
     def get_action(self, ids, obs_buf):
-        if remote_agent:
+        if REMOTE_AGENT:
             # Get action from remote agent
             return self.get_action_remote(ids, obs_buf)
         else:

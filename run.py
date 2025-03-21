@@ -34,7 +34,7 @@ parser.add_argument("--video_length", type=int, default=200, help="Length of the
 parser.add_argument("--video_interval", type=int, default=2000, help="Interval between video recordings (in steps).")
 parser.add_argument("--max_iterations", type=int, default=None, help="RL Policy training iterations.")
 parser.add_argument("--save_camera_data", action="store_true", default=False, help="Save camera data.")
-parser.add_argument("--task", type=str, default="AIR-v0-Grasp", choices=["AIR-v0-Grasp", "AIR-v0-Cont", "AIR-v0-Data", "AIR-v0-Tele"], help="Task name.")
+parser.add_argument("--task", type=str, default="AIR-v0-Grasp", choices=["AIR-v0-Grasp", "AIR-v0-RL", "AIR-v0-Data", "AIR-v0-Tele"], help="Task name.")
 
 parser.add_argument(
     "--distributed", action="store_true", help="Run training with multiple GPUs or nodes."
@@ -62,13 +62,13 @@ from air_sim import AIRPickSm
 """Rest everything else."""
 
 import time
-from isaac_env import use_sb3
+from isaac_env import USE_SB3
 
 if __name__ == "__main__":
     # run the main function
     simulator = AIRPickSm(args_cli)
     simulator.init_run()
-    if use_sb3:
+    if USE_SB3:
         simulator.run_sb3()
     else:
         while simulation_app.is_running():

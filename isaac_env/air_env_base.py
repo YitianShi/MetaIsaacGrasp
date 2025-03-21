@@ -61,10 +61,10 @@ class AIREnvBase(ManagerBasedRLEnv):
         self.save_camera_data = save_camera_data
 
         # Define entity
-        self.robot = self.scene[robot_name]
+        self.robot = self.scene[ROBOT_NAME]
         self.ee_frame = self.scene["ee_frame"]
         if not disable_camera:
-            self.camera = [self.scene[f"camera_{i}"] for i in range(n_multiple_cam)]
+            self.camera = [self.scene[f"camera_{i}"] for i in range(N_MULTIPLE_CAM)]
 
         if self.sim.has_gui():
             cfg = RAY_CASTER_MARKER_CFG.replace(prim_path="/Visuals/CameraPointCloud")
@@ -77,7 +77,7 @@ class AIREnvBase(ManagerBasedRLEnv):
 
         # Specify UR self.robot-specific parameters
         self.robot_entity_cfg = SceneEntityCfg(
-            robot_name, joint_names=ARM_JOINT, body_names=ee_name
+            ROBOT_NAME, joint_names=ARM_JOINT, body_names=ee_name
         )
         self.objs = self.scene["objs"]
 
@@ -101,7 +101,7 @@ class AIREnvBase(ManagerBasedRLEnv):
         self.des_gripper_state_wp = wp.from_torch(self.des_gripper_state, wp.float32)
 
         self.ee_quat_default = torch.tensor(
-            ee_grasp_quat_default, device=self.device
+            EE_GRASP_QUAT_DEFAULT, device=self.device
         ).repeat(self.num_envs, 1)
         self.ee_quat_default_wp = wp.from_torch(
             self.ee_quat_default[:, [1, 2, 3, 0]], wp.quat
@@ -124,7 +124,7 @@ class AIREnvBase(ManagerBasedRLEnv):
         if CONTROLLER == "RMPFLOW":
             pass
             # self.controller = RmpFlowController(UR_RMPFLOW_CFG, device=self.device)
-            # self.controller.initialize(f"{self.scene.env_regex_ns}/"+robot_name)
+            # self.controller.initialize(f"{self.scene.env_regex_ns}/"+ROBOT_NAME)
         else:
             self.controller = DifferentialIKController(
                 UR_IK_CFG, num_envs=self.num_envs, device=self.device
@@ -147,7 +147,7 @@ class AIREnvBase(ManagerBasedRLEnv):
         frame_marker_cfg_cam.markers["frame"].scale = (0.05, 0.05, 0.05)
         self.camera_markers =[VisualizationMarkers(
             frame_marker_cfg_cam.replace(prim_path=f"/Visuals/camera_{cam_id}")
-        ) for cam_id in range(n_multiple_cam)]
+        ) for cam_id in range(N_MULTIPLE_CAM)]
 
         # Resolving the self.scene entities
         self.robot_entity_cfg.resolve(self.scene)
@@ -176,7 +176,7 @@ class AIREnvBase(ManagerBasedRLEnv):
 
         # Reward recorder
         self.reward_recorder = torch.zeros(
-            (self.num_envs, 100, step_total), device=self.device
+            (self.num_envs, 100, STEP_TOTAL), device=self.device
         )
 
         self.obj_drop_pose = torch.tensor(obj_drop_pose, device=self.device)[None, ...]
@@ -198,7 +198,7 @@ class AIREnvBase(ManagerBasedRLEnv):
             env_reachable_and_stable: The environments that are reachable and stable.
         """
         # Grasp target recorder (position only)
-        object_pos = torch.zeros((self.num_envs, num_objs, 4), device=self.device)
+        object_pos = torch.zeros((self.num_envs, NUM_OBJS, 4), device=self.device)
         object_pos[..., :3] = self.objs.data.object_com_pos_w.clone() - self.robot.data.root_state_w[:, None, 0:3].clone()
         object_pos[..., 3] = torch.norm(
             self.objs.data.object_com_vel_w.clone(), dim=-1
@@ -279,7 +279,7 @@ class AIREnvBase(ManagerBasedRLEnv):
 
     def step(self, grasp_pose, policy_inference_criteria=torch.tensor([])):
         # Get the grasp pose from the policy
-        self.grasp_pose = grasp_pose
+        self.grasp_pose = self.process_action(grasp_pose)
 
         # Loop until the simulation frames until policy inference criteria is met
         while not policy_inference_criteria.any():
@@ -315,9 +315,9 @@ class AIREnvBase(ManagerBasedRLEnv):
             policy_inference_criteria = self._policy_inf_criteria()
 
         # Get the camera info
-        self.camera_info = [self.camera[can_id].data.info for can_id in range(n_multiple_cam)]
+        self.camera_info = [self.camera[can_id].data.info for can_id in range(N_MULTIPLE_CAM)]
         #ids = self.env_idx.clone()[self.inference_criteria]
-        if use_sb3:
+        if USE_SB3:
             return obs_buf, reward_buf, reset_terminated, reset_time_outs, dict()
 
         return (
@@ -328,6 +328,9 @@ class AIREnvBase(ManagerBasedRLEnv):
             policy_inference_criteria,
         )
 
+    def process_action(self, grasp_pose):
+        return grasp_pose
+    
     def _policy_inf_criteria(self):
         return self.sm_state == self.inference_state
     
@@ -371,7 +374,7 @@ class AIREnvBase(ManagerBasedRLEnv):
             depths = depths_all_env[env_id] if depths_all_env is not None else None
             normals = normals_all_env[env_id] if normals_all_env is not None else None
             id_to_labels = []
-            for cam_id in range(n_multiple_cam):
+            for cam_id in range(N_MULTIPLE_CAM):
                 pcd = pcds[cam_id]
                 # Get the instance segmentation and grasp pose
                 try:
@@ -405,7 +408,7 @@ class AIREnvBase(ManagerBasedRLEnv):
                         self.obj_chosen[env_id] = (
                             random.choice(self.obj_graspable[env_id].nonzero())
                             if self.obj_graspable[env_id].any()
-                            else random.randint(0, num_objs - 1)
+                            else random.randint(0, NUM_OBJS - 1)
                         )
                         # Get the grasp point as the center of the object in the robot frame
                         grasp_pos = self._get_obj_pos(self.obj_chosen[env_id])[env_id]
@@ -416,7 +419,7 @@ class AIREnvBase(ManagerBasedRLEnv):
                     else:
                         grasp_pos_img = None
 
-                if read_from_hdf5:
+                if READ_FROM_HDF5:
 
                     # Get id of chosen object
                     obj_id = OBJ_LABLE[self.obj_chosen[env_id]]
@@ -555,7 +558,7 @@ class AIREnvBase(ManagerBasedRLEnv):
         )
 
         # Update camera marker
-        for cam_id in range(n_multiple_cam):
+        for cam_id in range(N_MULTIPLE_CAM):
            self.camera_markers[cam_id].visualize(
                self.camera[cam_id].data.pos_w.clone(),
                self.camera[cam_id].data.quat_w_ros.clone(),
@@ -585,7 +588,7 @@ class AIREnvBase(ManagerBasedRLEnv):
                     )
 
         if pcds is not None:
-            for cam_id in range(n_multiple_cam):
+            for cam_id in range(N_MULTIPLE_CAM):
                 dp = cv2.normalize(pcds[cam_id][..., -1].cpu().numpy(), None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
                 dp = cv2.cvtColor(dp, cv2.COLOR_GRAY2RGB)
                 if grasp_pos_img is not None:
@@ -598,7 +601,7 @@ class AIREnvBase(ManagerBasedRLEnv):
         # Record object poses of the scene
         poses = []
         scene_obj_id = []
-        for obj in range(num_objs):
+        for obj in range(NUM_OBJS):
             pose = self._get_obj_pose(obj, env_id)
             if pose[2] > -5e-2:
                 # meter to centimeter
@@ -625,7 +628,7 @@ class AIREnvBase(ManagerBasedRLEnv):
                                     "id_to_labels": id_to_labels[cam_id] if id_to_labels is not None else None,
                                     "pcd": pcds[cam_id] if pcds is not None else None,
                                      } 
-                for cam_id in range(n_multiple_cam)
+                for cam_id in range(N_MULTIPLE_CAM)
             }
         
         data_to_save["obj_poses_robot"] = obj_poses_robot
@@ -644,7 +647,7 @@ class AIREnvBase(ManagerBasedRLEnv):
         return self.objs.data.object_com_pos_w.clone()[:, id_obj] - root_pose_w
 
     def _get_obj_pose(self, id_obj, id_env):
-        root_pose_w = self.robot.data.root_state_w[id_env, 0:3].clone()
+        root_pose_w = self.scene[ROBOT_NAME].data.root_state_w[id_env, 0:3].clone()
         obj_pos = self.objs.data.object_com_pos_w[id_env, id_obj].clone() - root_pose_w
         obj_quat = self.objs.data.object_com_quat_w[id_env, id_obj].clone()
         return torch.cat((obj_pos, obj_quat), -1)
@@ -653,8 +656,8 @@ class AIREnvBase(ManagerBasedRLEnv):
         return self.objs.data.object_com_vel_w[:, id_obj].clone()
 
     def _get_ee_pose(self):
-        view_pos_rob = self.ee_frame.data.target_pos_source.clone()[:, 0, :]
-        view_quat_rob = self.ee_frame.data.target_quat_source.clone()[:, 0, :]
+        view_pos_rob = self.scene["ee_frame"].data.target_pos_source.clone()[:, 0, :]
+        view_quat_rob = self.scene["ee_frame"].data.target_quat_source.clone()[:, 0, :]
         return torch.cat((view_pos_rob, view_quat_rob), -1)
 
     def _get_ee_vel(self):
@@ -665,9 +668,9 @@ class AIREnvBase(ManagerBasedRLEnv):
         return ee_vel_abs
 
     def get_camera_pose(self, cam_id, env_id = None):
-        view_pos_w = self.scene[f"camera_{cam_id}"].data.pos_w.clone()
+        VIEW_POS_W = self.scene[f"camera_{cam_id}"].data.pos_w.clone()
         view_quat_w = self.scene[f"camera_{cam_id}"].data.quat_w_ros.clone()
-        view_pos_rob = view_pos_w - self.scene[robot_name].data.root_state_w[:, 0:3].clone()
+        view_pos_rob = VIEW_POS_W - self.scene[ROBOT_NAME].data.root_state_w[:, 0:3].clone()
         view_pose_rob = torch.cat((view_pos_rob, view_quat_w), -1)
         return view_pose_rob[env_id] if env_id is not None else view_pose_rob
 
@@ -686,7 +689,7 @@ class AIREnvBase(ManagerBasedRLEnv):
                 indices = torch.randperm(pointcloud.size()[0])[:5000]
                 sampled_point_cloud = pointcloud[indices]
                 self.pc_markers[env_id].visualize(translations=sampled_point_cloud)
-            pcds.append(pointcloud.view(cam_width, cam_height, 3).permute(1, 0, 2))
+            pcds.append(pointcloud.view(CAM_WIDTH, CAM_HEIGHT, 3).permute(1, 0, 2))
         return pcds
 
     def rep_write(self, obs_buf, ids):

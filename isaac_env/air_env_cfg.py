@@ -35,7 +35,7 @@ from .element_cfg import *
 class CellSceneCfg(InteractiveSceneCfg):
     """Configuration for a env scene."""
 
-    def __init__(self, num_objs, disable_camera, **kwargs):
+    def __init__(self, disable_camera, **kwargs):
         # ground plane
         # lights
         self.dome_light = AssetBaseCfg(
@@ -55,12 +55,12 @@ class CellSceneCfg(InteractiveSceneCfg):
         self.table: AssetBaseCfg = TABLE_CFG.replace(
             prim_path="{ENV_REGEX_NS}/Table"
         )
-        setattr(self, robot_name, ROBOT_CFGs[robot_name].replace(
-            prim_path="{ENV_REGEX_NS}/" + robot_name
+        setattr(self, ROBOT_NAME, ROBOT_CFGs[ROBOT_NAME].replace(
+            prim_path="{ENV_REGEX_NS}/" + ROBOT_NAME
         ))
 
-        # self.mark = MARK1_CFG.replace(prim_path="{ENV_REGEX_NS}/" + robot_name + "/Mark1")
-        # self.mark2 = MARK2_CFG.replace(prim_path="{ENV_REGEX_NS}/" + robot_name + "/Mark2")
+        # self.mark = MARK1_CFG.replace(prim_path="{ENV_REGEX_NS}/" + ROBOT_NAME + "/Mark1")
+        # self.mark2 = MARK2_CFG.replace(prim_path="{ENV_REGEX_NS}/" + ROBOT_NAME + "/Mark2")
 
         super().__init__(**kwargs)
         
@@ -69,17 +69,17 @@ class CellSceneCfg(InteractiveSceneCfg):
             f"obj_{i}": OBJ_CFGs[i].replace(
                 prim_path="{ENV_REGEX_NS}/obj_"+str(i)
             )
-            for i in range(num_objs)
+            for i in range(NUM_OBJS)
         },
         )
 
         """Random camera initialization."""
         if not disable_camera:
-            self.camera_0 = CAMERA_CFG.replace(prim_path="{ENV_REGEX_NS}"+f"/{robot_name}/{camera_name}camera_0")
+            self.camera_0 = CAMERA_CFG.replace(prim_path="{ENV_REGEX_NS}"+f"/{ROBOT_NAME}/{CAMERA_NAME}camera_0")
             if n_random_cam:
                 for i in range(n_random_cam):
                     setattr(self, random_cam_names[i], CAMERA_RANDOM_CFG[i].replace(
-                        prim_path="{ENV_REGEX_NS}"+f"/{robot_name}/{random_cam_names[i]}", 
+                        prim_path="{ENV_REGEX_NS}"+f"/{ROBOT_NAME}/{random_cam_names[i]}", 
                         offset=CameraCfg.OffsetCfg(
                             pos=(0.1, 0.1, 0.1), 
                             rot=(0.1, 0.1, 0.1, 0.1), 
@@ -89,12 +89,12 @@ class CellSceneCfg(InteractiveSceneCfg):
                 
         """Pose initialization."""
         self.ee_frame = FrameTransformerCfg(
-        prim_path="{ENV_REGEX_NS}/"+robot_name+"/base_link",
+        prim_path="{ENV_REGEX_NS}/"+ROBOT_NAME+"/base_link",
         debug_vis=False,
         visualizer_cfg=FRAME_MARKER_SMALL_CFG.replace(prim_path="/Visuals/EndEffectorFrameTransformer"),
         target_frames=[
             FrameTransformerCfg.FrameCfg(
-                prim_path="{ENV_REGEX_NS}/"+robot_name+"/"+ee_name,
+                prim_path="{ENV_REGEX_NS}/"+ROBOT_NAME+"/"+ee_name,
                 name=ee_name,
                 offset=OffsetCfg(
                     pos=(0.0, 0.0, 0.),
@@ -102,18 +102,18 @@ class CellSceneCfg(InteractiveSceneCfg):
             )
         ],)
 
-        if on_hand:
+        if ON_HAND:
             self.view_frame = FrameTransformerCfg(
-            prim_path="{ENV_REGEX_NS}/"+robot_name+"/base_link",
+            prim_path="{ENV_REGEX_NS}/"+ROBOT_NAME+"/base_link",
             debug_vis=False,
             visualizer_cfg=FRAME_MARKER_SMALL_CFG.replace(prim_path = "/Visuals/ViewFrameTransformer"),
             target_frames=[
                 FrameTransformerCfg.FrameCfg(
-                    prim_path="{ENV_REGEX_NS}"+f"/{robot_name}/VMS3D_Femto_Mega_S_0",
+                    prim_path="{ENV_REGEX_NS}"+f"/{ROBOT_NAME}/VMS3D_Femto_Mega_S_0",
                     name=ee_name,
                     offset=OffsetCfg(
-                        pos=view_pos_cam,
-                        rot=view_quat_cam
+                        pos=VIEW_POS_CAM,
+                        rot=VIEW_QUAT_CAM
                     ),
                 )
             ],)
@@ -127,25 +127,25 @@ class ActionsCfg:
     """Action specifications for the MDP."""
 
     joint_pos = mdp.JointPositionActionCfg(
-        asset_name=robot_name, joint_names=list(ARM_JOINT.keys()), scale=1.0
+        asset_name=ROBOT_NAME, joint_names=list(ARM_JOINT.keys()), scale=1.0
     )
     gripper_pos = mdp.BinaryJointPositionActionCfg(
-        asset_name=robot_name,
-        joint_names=[*gripper_joint_cfg[robot_name]["default"]],
-        open_command_expr=gripper_joint_cfg[robot_name]["open"],
-        close_command_expr=gripper_joint_cfg[robot_name]["close"],
+        asset_name=ROBOT_NAME,
+        joint_names=[*gripper_joint_cfg[ROBOT_NAME]["default"]],
+        open_command_expr=gripper_joint_cfg[ROBOT_NAME]["open"],
+        close_command_expr=gripper_joint_cfg[ROBOT_NAME]["close"],
     )
 
 
 def rgb_capture(env):
     """Height scan from the given sensor w.r.t. the sensor's frame."""
     # extract the used quantities (to enable type-hinting)
-    rgb = [env.scene[f"camera_{i}"].data.output["rgb"][..., :3].float() for i in range(n_multiple_cam)]
+    rgb = [env.scene[f"camera_{i}"].data.output["rgb"][..., :3].float() for i in range(N_MULTIPLE_CAM)]
     rgb = torch.stack(rgb, 0).transpose(0, 1)
-    if not use_sb3:
+    if not USE_SB3:
         return rgb
     rgb_m = rgb.float().mean(dim=(2,3), keepdim=True)
-    rgb_std = rgb.std(dim=(2,3), keepdim=True)
+    rgb_std = rgb.std(dim=(2,3), keepdim=True) + 1e-8
     rgb = (rgb - rgb_m) / rgb_std
     return rgb
 
@@ -153,52 +153,58 @@ def rgb_capture(env):
 def normal_capture(env):
     """Height scan from the given sensor w.r.t. the sensor's frame."""
     # extract the used quantities (to enable type-hinting)
-    data = [env.scene[f"camera_{i}"].data.output["normals"][..., :3] for i in range(n_multiple_cam)]
+    data = [env.scene[f"camera_{i}"].data.output["normals"][..., :3] for i in range(N_MULTIPLE_CAM)]
     return torch.stack(data, 0).transpose(0, 1)
 
 
 def inst_capture(env):
     """Height scan from the given sensor w.r.t. the sensor's frame."""
     # extract the used quantities (to enable type-hinting)
-    data = [env.scene[f"camera_{i}"].data.output["instance_segmentation_fast"].unsqueeze(-1) for i in range(n_multiple_cam)]
+    data = [env.scene[f"camera_{i}"].data.output["instance_segmentation_fast"].unsqueeze(-1) for i in range(N_MULTIPLE_CAM)]
     return torch.stack(data, 0).transpose(0, 1)
 
 
 def depth_capture(env):
     """Height scan from the given sensor w.r.t. the sensor's frame."""
     # extract the used quantities (to enable type-hinting)
-    data = [env.scene[f"camera_{i}"].data.output["distance_to_image_plane"].unsqueeze(-1) for i in range(n_multiple_cam)]
+    data = [env.scene[f"camera_{i}"].data.output["distance_to_image_plane"].unsqueeze(-1) for i in range(N_MULTIPLE_CAM)]
     # Maximum representable value for the tensor's dtype
     # Clip positive infinity to maximum value
-    return torch.clip(torch.stack(data, 0).transpose(0, 1), 0., depth_max)
+    depth_data = torch.clip(torch.stack(data, 0).transpose(0, 1), 0., DEPTH_MAX)
+    return depth_data
+
+def gripper_pose_capture(env):
+    """获取夹爪状态作为观测"""
+    ob_gripper_pose = env._get_ee_pose()
+    return ob_gripper_pose
 
 
 def pcd_capture(env):
     pcds = []
-    for cam_id in range(n_multiple_cam):
+    for cam_id in range(N_MULTIPLE_CAM):
         depths = env.scene[f"camera_{cam_id}"].data.output["distance_to_image_plane"]
-        depths = torch.clip(depths, 0, depth_max)
+        depths = torch.clip(depths, 0, DEPTH_MAX)
         pcd_map = [create_pointcloud_from_depth(
             intrinsic_matrix=env.scene[f"camera_{cam_id}"].data.intrinsic_matrices[env_id],
             depth=depths[env_id],
             position=get_camera_pose(env, cam_id, env_id)[:3],
             orientation=get_camera_pose(env, cam_id, env_id)[3:],
-            device=env.device).view(cam_width, cam_height, 3).permute(1,0,2) for env_id in range(env.scene.num_envs)]
+            device=env.device).view(CAM_WIDTH, CAM_HEIGHT, 3).permute(1,0,2) for env_id in range(env.scene.num_envs)]
         pcds.append(torch.stack(pcd_map, 0))
     return torch.stack(pcds, 0).transpose(0, 1)
 
 
 def get_camera_pose(env, cam_id=None, env_id=None):
     if cam_id is None:
-        return torch.stack([env.get_camera_pose(cam_id) for cam_id in range(n_multiple_cam)])
+        return torch.stack([env.get_camera_pose(cam_id) for cam_id in range(N_MULTIPLE_CAM)])
     return env.get_camera_pose(cam_id) if env_id is None else env.get_camera_pose(cam_id, env_id)
 
 
 def get_obj_height(env):
     """Get whether the object is lifted above the minimal height"""
     objs_hight = torch.stack(
-        [env.scene[f"obj_{i}"].data.root_pos_w[:, 2] for i in range(num_objs)]).T
-    objs_hight -= env.scene[robot_name].data.root_pos_w[:, 2][..., None]
+        [env.scene[f"obj_{i}"].data.root_pos_w[:, 2] for i in range(NUM_OBJS)]).T
+    objs_hight -= env.scene[ROBOT_NAME].data.root_pos_w[:, 2][..., None]
     # The obj is lifted if its height is above 90% of the lift height
     return objs_hight
 
@@ -221,6 +227,7 @@ class ObservationsCfg:
                 self.distance_to_image_plane = ObsTerm(func=depth_capture)
                 self.pcd = ObsTerm(func=pcd_capture)
 
+            self.gripper_pose = ObsTerm(func=gripper_pose_capture)
             self.concatenate_terms = False
 
     @configclass
@@ -325,7 +332,7 @@ def reset_root_state_uniform(
 def reset_root_state_sphere(
     env: ManagerBasedEnv,
     env_ids: torch.Tensor,
-    sphere_radius: float,
+    SPHERE_RADIUS: float,
     asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
     angle_min = 0, angle_max = pi / 4
 ):
@@ -345,7 +352,7 @@ def reset_root_state_sphere(
     angle_max = pi / 3
 
     if len(env_ids):
-        robot_pos = env.scene[robot_name].data.root_pos_w[env_ids]
+        ROBOT_POS = env.scene[ROBOT_NAME].data.root_pos_w[env_ids]
 
         asset = env.scene[asset_cfg.name]
 
@@ -362,22 +369,22 @@ def reset_root_state_sphere(
         else: 
             phi = torch.full((num_envs,), angle_max, device=env.device)
 
-        x = sphere_radius * torch.sin(phi) * torch.cos(theta)
-        y = sphere_radius * torch.sin(phi) * torch.sin(theta)
-        z = sphere_radius * torch.cos(phi)
+        x = SPHERE_RADIUS * torch.sin(phi) * torch.cos(theta)
+        y = SPHERE_RADIUS * torch.sin(phi) * torch.sin(theta)
+        z = SPHERE_RADIUS * torch.cos(phi)
 
         random_pts_ct = torch.stack([x, y, z], dim=1) 
         random_pts_r = random_pts_ct + center_pt.to(env.device) 
-        random_pts_w = random_pts_r + robot_pos
+        random_pts_w = random_pts_r + ROBOT_POS
 
-        center_pt_w = center_pt.to(env.device) + robot_pos
+        center_pt_w = center_pt.to(env.device) + ROBOT_POS
 
         asset.set_world_poses_from_view(random_pts_w, center_pt_w, env_ids=env_ids)
 
 @configclass
 class EventCfg:
-    def __init__(self, num_objs):
-        if not targo:
+    def __init__(self):
+        if not TARGO:
             self.reset_robot_pos = EventTerm(
                 func=reset_robot_to_default,
                 mode="reset",
@@ -400,7 +407,7 @@ class EventCfg:
             )
                 
         else:
-            for i in range(num_objs):
+            for i in range(NUM_OBJS):
                 self.reset_obj_pos = EventTerm(
                         func=mdp.reset_scene_to_default,
                         mode="reset",
@@ -414,7 +421,7 @@ class EventCfg:
                     func=reset_root_state_sphere,
                     mode="reset",
                     params={
-                        "sphere_radius": sphere_radius,
+                        "SPHERE_RADIUS": SPHERE_RADIUS,
                          "asset_cfg": SceneEntityCfg(random_cam_names[ix]),
                     },
                 ),
@@ -423,10 +430,10 @@ class EventCfg:
 
 def grasp_success_compute(env) -> torch.Tensor:
     """Reward the agent for lifting the object above the minimal height."""
-    objs_hight = torch.stack([env._get_obj_pos(i)[:, -1] for i in range(num_objs)]).T
+    objs_hight = torch.stack([env._get_obj_pos(i)[:, -1] for i in range(NUM_OBJS)]).T
     # The obj is lifted if its height is above 90% of the lift height
     # The environment should reach the terminate state
-    objs_hight_over_limit = objs_hight > lift_height * 0.8
+    objs_hight_over_limit = objs_hight > LIFT_HEIGHT * 0.8
     success_env = torch.any(objs_hight_over_limit, dim=1) & (STATE_MACHINE["lift"] == env.sm_state)
     # Successive grasp failure is reset if the env is successful
     env.successive_grasp_failure[success_env] = -1
@@ -438,18 +445,52 @@ def grasp_success_compute(env) -> torch.Tensor:
         env.obj_chosen[success_obj[:, 0]] = success_obj[:, 1]
     return reward
 
+def gripper_touch_reward(env) -> torch.Tensor:
+    """Reward the agent when the gripper touches the object."""
+    # 获取所有物体的位置 (batch_size, NUM_OBJS, 3)
+    objs_pos = torch.stack([env._get_obj_pos(i) for i in range(NUM_OBJS)], dim=1)
+    # 获取夹爪的位置 (batch_size, 3)
+    gripper_pos = env._get_ee_pose()[:, :3]
+    # 计算夹爪到每个物体的距离
+    dist_to_objs = torch.norm(objs_pos - gripper_pos[:, None, :], dim=-1)
+    touch_threshold = 0.1 # 5cm
+    touched_obj = dist_to_objs < touch_threshold # 触碰到了物体
+    success_env = torch.any(touched_obj, dim=1) # (batch_size,)
+    # 计算奖励 (batch_size,)
+    reward = success_env.float()
+    
+    return reward
+
+
+def gripper_distance_reward(env) -> torch.Tensor:
+    """Reward the agent when the gripper touches the object."""
+    # 获取所有物体的位置 (batch_size, NUM_OBJS, 3)
+    objs_pos = torch.stack([env._get_obj_pos(i) for i in range(NUM_OBJS)], dim=1)
+    # 获取夹爪的位置 (batch_size, 3)
+    gripper_pos = env._get_ee_pose()[:, :3]
+    # 计算夹爪到每个物体的距离
+    dist_to_objs = torch.norm(objs_pos - gripper_pos[:, None, :], dim=-1)
+    min_distance, _ = torch.min(dist_to_objs, dim=1)
+    # 计算密集奖励
+    alpha = 10.0
+    reward = torch.exp(-alpha * min_distance)
+    
+    return reward
+
 
 @configclass
 class RewardsCfg:
     """Reward terms for the MDP."""
     grasp_success = RewTerm(func=grasp_success_compute, weight=1)
+    if USE_SB3:
+        gripper_distance = RewTerm(func=gripper_touch_reward, weight=.001)
 
 
 def time_out(env) -> torch.Tensor:
     """Terminate the episode when the episode length exceeds the maximum episode length."""
-    cri1 = env.successive_grasp_failure == successive_grasp_failure_limit
+    cri1 = env.successive_grasp_failure == SUCCESSIVE_GRASP_FAILURE_LIMIT
     cri2 = ~ env.env_reachable
-    cri3 = env.epi_step_count[:, 1] >= step_total
+    cri3 = env.epi_step_count[:, 1] >= STEP_TOTAL
     cri4 = env.sm_state == STATE_MACHINE["init_env"]
 
     return (cri1 | cri2 | cri3) & cri4
@@ -500,13 +541,11 @@ class CellEnvCfg(ManagerBasedRLEnvCfg):
             num_envs=4096,
             env_spacing=2.5,
             replicate_physics=True,
-            num_objs=num_objs,
             disable_camera=disable_camera,
         )
-        self.events: EventCfg = EventCfg(num_objs=num_objs)
+        self.events: EventCfg = EventCfg()
         # environment settings
         self.num_envs = 1
-        self.num_objs = num_objs
         self.episode_length_s = 5
 
     # Post initialization

@@ -67,11 +67,11 @@ class AIREnvTele(AIREnvBase):
 
         print(self.teleop_interface)
         
-        if remote_agent:
+        if REMOTE_AGENT:
             self.teleop_interface.add_callback("N", self.get_action_remote)
             self.teleop_interface.add_callback("M", self.get_action_llm)
 
-        if targo:
+        if TARGO:
             frame_marker_targo = FRAME_MARKER_CFG.copy()
             frame_marker_targo.markers["frame"].scale = (marker_scale, marker_scale, marker_scale)
             self.targo_marker = VisualizationMarkers(
@@ -245,7 +245,7 @@ class AIREnvTele(AIREnvBase):
 
     def _vis(self, ee_goals):
         super()._vis(ee_goals)
-        if targo:    
+        if TARGO:    
             self.targo_marker.visualize(
                 self.targo_pose_view[:3].unsqueeze(0) + self.scene.env_origins,
                 self.targo_pose_view[3:].unsqueeze(0),

@@ -127,4 +127,44 @@ class AIREnvRL(AIREnvBase):
         return torch.cat((des_ee_pose, self.des_gripper_state.unsqueeze(-1)), -1)
     
     def _policy_inf_criteria(self):
+        # advance_frame_con 记录是否应该推进帧（用于连续控制），直接根据 advance_frame_con 变量的值来决定是否推进，和Base类不同
         return self.advance_frame_con.clone()
+    
+    def process_action(self, grasp_pose):
+        quat = grasp_pose[:, 3:7]
+        norm = quat.norm(dim=1, keepdim=True)
+        quat_normalized = quat / norm
+
+        grasp_pose[:, :3] /= torch.norm(grasp_pose[:, :3], dim=-1, keepdim=True)
+        pos = self.scene["ee_frame"].data.target_pos_source.clone()[:, 0, :] + 0.05 * grasp_pose[:, :3]
+        action_normalized = torch.cat((pos, self.scene["ee_frame"].data.target_quat_source.clone()[:, 0, :]), dim=1)
+        return action_normalized
+    
+    def _summerize_and_reset(self, reward_buf):
+        """
+        Calculate the reward and
+        reset the indexed enviroments
+        """
+        # Judge in the terminate state
+        judge_reward = (self.sm_state == 8.) | (self.sm_state == 7.) # 如果当前状态是lift状态
+        # Calculate the reward
+        #if reward_buf.any(): # 如果 reward_buf 里至少有一个非零奖励，就记录奖励并重置有奖励的机器人
+        #    self._reset_robot(reward_buf.bool())
+
+        # Get the reset id from the state machine 获取需要重置的索引
+        init_id = self.env_idx.clone()[self.sm_state == STATE_MACHINE["init"]]
+        init_env_id = self.env_idx.clone()[self.sm_state == STATE_MACHINE["init_env"]]
+
+        # Reset the robot, environment and the teleoperation interface
+        self._reset_robot(init_id)
+        self._reset_idx(init_env_id)
+
+        # To stabilize the robot, set the grasp pose to the current pose during the start state
+        # 选出 start 状态的环境，然后将 grasp_pose 设为当前 EE 位姿 让机器人稳定。
+        self.grasp_pose[self.sm_state == STATE_MACHINE["start"]] = self._get_ee_pose()[self.sm_state == STATE_MACHINE["start"]]
+    
+    def _record_reward(self, judge_reward):
+        """Summarize the reward and print the success message."""
+        for i, env_success in enumerate(self.reward_buf):
+            if env_success and judge_reward[i]:
+                self.sm_state[i] = STATE_MACHINE["init"]

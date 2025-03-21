@@ -33,48 +33,48 @@ import trimesh as tm
 
 # Hyperparameters
 # Parameters frequently changed
-use_sb3 = False # use stable baselines3 for training
-on_hand = True # whether the camera is on the hand 
-num_objs = 12 # number of objects
-use_urdf_converter = False # use urdf converter to convert usd to urdf
+USE_SB3 = True # use stable baselines3 for training
+ON_HAND = True # whether the camera is on the hand 
+NUM_OBJS = 12 # number of objects
+USE_URDF_CONVERTER = False # use urdf converter to convert usd to urdf
 
 # Task parameters 
-read_from_hdf5 = False # read data from hdf5 file to get grasp pose
+READ_FROM_HDF5 = False # read data from hdf5 file to get grasp pose
 
 # Learning Environment parameters
-successive_grasp_failure_limit = 12 # number of successive grasp failure before reset the environment
-step_total = 30 # total number of steps for each episode
+SUCCESSIVE_GRASP_FAILURE_LIMIT = 12 # number of successive grasp failure before reset the environment
+STEP_TOTAL = 30 # total number of steps for each episode
 
-# Robot arm parameters
-robot_name = "ur10e_hand_e" # Choose from "ur10", "ur10e", "ur10e_2f85", "ur10e_hand_e"
-continuous_control = False # continuous control for robot
-robot_pos = (0.1, 0.6, 0.925) # robot position
-bow_angle = 0.1 # bow angle of the robot
-down_ration = .75 # down ration of the robot
-wrist_lift = .5 # wrist lift of the robot
-approach_distance = 0.05 # distance to approach the object before grasp
-lift_height = 0.4 # height to lift the object
-grasp_distance = 0.1 # apprach distance before grasp the object
-distance_limit = 2e-2 # distance limit for robot to reach the goal before state transition
-ee_vel_limit = 5e-2 # velocity limit for robot to reach the goal before state transition
-ee_grasp_quat_default = (.5, -0.5, 0.5, -0.5) # default quaternion after grasping
-CONTROLLER = "NOT_IMPLEMENTED" # Not used, in future version, choose from "RMPFLOW"
-remote_agent = False # use remote agent for training
-targo = False
+# robot arm parameters
+ROBOT_NAME = "ur10e_hand_e"  # choose from "ur10", "ur10e", "ur10e_2f85", "ur10e_hand_e"
+CONTINUOUS_CONTROL = False  # continuous control for robot
+ROBOT_POS = (0.1, 0.6, 0.925)  # robot position
+BOW_ANGLE = 0.1  # bow angle of the robot
+DOWN_RATION = 0.75  # down ration of the robot
+WRIST_LIFT = 0.5  # wrist lift of the robot
+APPROACH_DISTANCE = 0.05  # distance to approach the object before grasp
+LIFT_HEIGHT = 0.4  # height to lift the object
+GRASP_DISTANCE = 0.1  # apprach distance before grasp the object
+DISTANCE_LIMIT = 2e-2  # distance limit for robot to reach the goal before state transition
+EE_VEL_LIMIT = 5e-2  # velocity limit for robot to reach the goal before state transition
+EE_GRASP_QUAT_DEFAULT = (0.5, -0.5, 0.5, -0.5)  # default quaternion after grasping
+CONTROLLER = "NOT_IMPLEMENTED"  # not used, in future version, choose from "rmpflow"
+REMOTE_AGENT = False  # use remote agent for training
+TARGO = False
 
-# Camera parameters
-n_multiple_cam = 1 # number of multiple cameras, at least 1 for on_hand camera otherwise disable_camera = True
-fix_rand_camera = True
-camera_name = "VMS3D_Femto_Mega_S_0/" if on_hand else "" 
-cam_height, cam_width = 480, 640 # camera resolution
-view_pos_w = torch.tensor((0.7, 0, 1.)) # viewpoint wrt. world
-# view_pos_cam = (24.46*0.001, 15.9234*0.001, -.33675*0.001) # viewpoint wrt. camera
-# view_quat_cam = (0.0, 0, 1, .0) # quaternion of viewpoint wrt. camera
-view_pos_cam = (-2, 57.55, 1.5) # viewpoint wrt. camera
-view_quat_cam = (-0.6691306, 0.7431448, 0, 0,) # quaternion of viewpoint wrt. camera
-depth_max = 2. # maximum depth for the camera
-sphere_radius = 0.6 
-up_direction = torch.tensor([0., 0., 1.]) # up direction of the camera
+# camera parameters
+N_MULTIPLE_CAM = 1  # number of multiple cameras, at least 1 for ON_HAND camera otherwise disable_camera = true
+FIX_RAND_CAMERA = True
+CAMERA_NAME = "VMS3D_Femto_Mega_S_0/" if ON_HAND else "" 
+CAM_HEIGHT, CAM_WIDTH = 480, 640  # camera resolution
+VIEW_POS_W = torch.tensor((0.7, 0, 1.))  # viewpoint wrt. world
+# VIEW_POS_CAM = (24.46*0.001, 15.9234*0.001, -.33675*0.001)  # viewpoint wrt. camera
+# VIEW_QUAT_CAM = (0.0, 0, 1, .0)  # quaternion of viewpoint wrt. camera
+VIEW_POS_CAM = (-2, 57.55, 1.5)  # viewpoint wrt. camera
+VIEW_QUAT_CAM = (-0.6691306, 0.7431448, 0, 0)  # quaternion of viewpoint wrt. camera
+DEPTH_MAX = 2.0  # maximum depth for the camera
+SPHERE_RADIUS = 0.6
+UP_DIRECTION = torch.tensor([0., 0., 1.])  # up direction of the camera
 
 STATE_MACHINE = {
     "init_env": 0,
@@ -100,8 +100,8 @@ STATE_MACHINE = {
 obj_exclude = ["033"]
 
 test_obj = False
-if test_obj:
-    num_objs = 1
+if test_obj or USE_SB3:
+    NUM_OBJS = 1
 
 ################# PATH CONFIG #################
 HOME_PATH =  "omniverse://nucleus.ifl.kit.edu/Users/yitian/" # 
@@ -127,9 +127,9 @@ CORNER_PATHS = [os.path.join(HOME_PATH, "models/obj.usd")] # path to the corner 
 MGN_PATHS_URDF = [os.path.join(MODEL_PATH, a, "textured.urdf") for a in nums] # path to the objects in urdf format
 
 # Target object path and pose
-if targo:
+if TARGO:
     view_pos_targo = (0.3, 0.18, 0.) # viewpoint wrt. targo object
-    shift_targo = tuple(a + b for a, b in zip(view_pos_targo, robot_pos))
+    shift_targo = tuple(a + b for a, b in zip(view_pos_targo, ROBOT_POS))
     TARGO_OBJ_PATHS, targo_obj_scales, targo_obj_positions, targo_obj_rotations, occ_targ_max, targo_extrinsic, targo_obj_chosen = read_targo(shift_targo)
 
 USD_PATH = os.path.join(HOME_PATH, "models") # path to the usd files
@@ -141,19 +141,19 @@ if not os.path.exists(IMG_PATH):
     print(f"Directory {IMG_PATH} created since it does not exist")
 
 # use urdf converter to convert usd to urdf or not
-if targo:
+if TARGO:
     OBJ_PATH = TARGO_OBJ_PATHS
-    num_objs = len(TARGO_OBJ_PATHS)
-elif use_urdf_converter:    
+    NUM_OBJS = len(TARGO_OBJ_PATHS)
+elif USE_URDF_CONVERTER:    
     OBJ_PATH = MGN_PATHS_URDF  
 else:
     OBJ_PATH = MGN_PATHS
 
-if not targo:
+if not TARGO:
     random.shuffle(OBJ_PATH)
-    OBJ_LABLE = [i.split("/")[-2] for i in OBJ_PATH][:num_objs]
+    OBJ_LABLE = [i.split("/")[-2] for i in OBJ_PATH][:NUM_OBJS]
 else:
-    OBJ_LABLE = [i.split("/")[-1].split(".")[0] for i in OBJ_PATH][:num_objs]
+    OBJ_LABLE = [i.split("/")[-1].split(".")[0] for i in OBJ_PATH][:NUM_OBJS]
 
 
 ################# ROBOT ARM CONFIG #################
@@ -206,14 +206,14 @@ gripper_joint_cfg = {
 
 ARM_JOINT = {
     "shoulder_pan_joint": 0.,
-    "shoulder_lift_joint": -np.pi * down_ration + bow_angle,
-    "elbow_joint": np.pi * down_ration,
-    "wrist_1_joint": -np.pi / 2 - bow_angle - wrist_lift,
+    "shoulder_lift_joint": -np.pi * DOWN_RATION + BOW_ANGLE,
+    "elbow_joint": np.pi * DOWN_RATION,
+    "wrist_1_joint": -np.pi / 2 - BOW_ANGLE - WRIST_LIFT,
     "wrist_2_joint": -np.pi / 2,
     "wrist_3_joint": np.pi,
 }
 
-if targo:
+if TARGO:
     ARM_JOINT.update({
         "shoulder_pan_joint": 0.133,
         "shoulder_lift_joint": -1.077,
@@ -224,7 +224,7 @@ if targo:
     })
 
 JOINT_SETUP = ARM_JOINT.copy()
-JOINT_SETUP.update(gripper_joint_cfg[robot_name]["default"])
+JOINT_SETUP.update(gripper_joint_cfg[ROBOT_NAME]["default"])
 
 # Object parameters
 object_name = "obj"
@@ -244,8 +244,8 @@ ee_obj_default = [
 obj_drop_pose = (0.3, 0.7, 0.1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0) # object drop pose
 
 # Viewpoint sampling paremeters
-if targo:
-    desk_center = torch.tensor(targo_obj_positions.mean(axis=0) - robot_pos, dtype=torch.float32)
+if TARGO:
+    desk_center = torch.tensor(targo_obj_positions.mean(axis=0) - ROBOT_POS, dtype=torch.float32)
 
 center_pt = torch.tensor((desk_center[0], desk_center[1], 0.), dtype=torch.float32)
 
@@ -257,9 +257,9 @@ horizontal_aperture_mm = 2.59 # 20.955
 sensor_width_m = horizontal_aperture_mm / 1000
 focal_length_m = focal_length_cm / 1000  # error in orbit, it ignore the unit of focal length
 
-disable_camera = n_multiple_cam == 0
+disable_camera = N_MULTIPLE_CAM == 0
 
-if use_sb3:
+if USE_SB3:
     MODALITIES = {
         "rgb": 4,
         "distance_to_image_plane": 1
@@ -274,8 +274,8 @@ else:
 
 CAMERA_CFG = CameraCfg(
     update_period=0.001,
-    height=cam_height,
-    width=cam_width,
+    height=CAM_HEIGHT,
+    width=CAM_WIDTH,
     data_types=[*MODALITIES],
     colorize_instance_id_segmentation=False,
     colorize_semantic_segmentation=False,
@@ -286,17 +286,17 @@ CAMERA_CFG = CameraCfg(
         horizontal_aperture=horizontal_aperture_mm,
         clipping_range=(0.01, 1.0e5),
     ),
-    offset=CameraCfg.OffsetCfg(pos=view_pos_cam if on_hand else view_pos_w, 
-                               rot=view_quat_cam, 
+    offset=CameraCfg.OffsetCfg(pos=VIEW_POS_CAM if ON_HAND else VIEW_POS_W, 
+                               rot=VIEW_QUAT_CAM, 
                                convention="ros"),
     )
 
-image_resolution = (cam_width, cam_height)
+image_resolution = (CAM_WIDTH, CAM_HEIGHT)
 focal_length_pixels = (focal_length_m / sensor_width_m) * image_resolution[0]
 cx, cy = image_resolution[0] / 2, image_resolution[1] / 2
 
 
-n_random_cam = n_multiple_cam - 1
+n_random_cam = N_MULTIPLE_CAM - 1
 random_cam_names = [f"camera_{i+1}" for i in range(n_random_cam)]
 fix_cam_angle = np.linspace(0, np.pi * 2, n_random_cam, endpoint=False)
     
@@ -304,8 +304,8 @@ fix_cam_angle = np.linspace(0, np.pi * 2, n_random_cam, endpoint=False)
 CAMERA_RANDOM_CFG = [
     CameraCfg(
         update_period=0.001,
-        height=cam_height,
-        width=cam_width,
+        height=CAM_HEIGHT,
+        width=CAM_WIDTH,
         data_types=[*MODALITIES],
         colorize_instance_id_segmentation=False,
         colorize_semantic_segmentation=False,
@@ -347,7 +347,7 @@ UR10e_2F85_CFG = ArticulationCfg(
         collision_props=sim_utils.CollisionPropertiesCfg(collision_enabled=True),
         activate_contact_sensors=False,
     ),
-    init_state=ArticulationCfg.InitialStateCfg(joint_pos=JOINT_SETUP, pos=robot_pos),
+    init_state=ArticulationCfg.InitialStateCfg(joint_pos=JOINT_SETUP, pos=ROBOT_POS),
     actuators={
         "arm": ImplicitActuatorCfg(
             joint_names_expr=list(ARM_JOINT.keys()),
@@ -379,7 +379,7 @@ UR10e_HAND_E_CFG = ArticulationCfg(
         collision_props=sim_utils.CollisionPropertiesCfg(collision_enabled=True),
         activate_contact_sensors=False,
     ),
-    init_state=ArticulationCfg.InitialStateCfg(joint_pos=JOINT_SETUP, pos=robot_pos),
+    init_state=ArticulationCfg.InitialStateCfg(joint_pos=JOINT_SETUP, pos=ROBOT_POS),
     actuators={
         "arm": ImplicitActuatorCfg(
             joint_names_expr=list(ARM_JOINT.keys()),
@@ -403,7 +403,7 @@ end_effector_frame_name = {
     "ur10e_2f85": "tool0",
     "ur10e_hand_e": "hande_end",
 }
-ee_name = end_effector_frame_name[robot_name]
+ee_name = end_effector_frame_name[ROBOT_NAME]
 
 ################# OBJECT CONFIG #################
 
@@ -475,7 +475,7 @@ MGN_CFGs = [
             semantic_tags=[("class", f"{mgn.split('/')[-2]}"), ("color", "red")],
         ),
         init_state=RigidObjectCfg.InitialStateCfg(
-            pos=robot_pos,
+            pos=ROBOT_POS,
             rot=(1, 0.0, 0.0, 0),
         ),
         collision_group = 0
@@ -500,7 +500,7 @@ MGN_CFGs_URDF = [
             collision_props=sim_utils.CollisionPropertiesCfg(collision_enabled=True),
         ),
         init_state=RigidObjectCfg.InitialStateCfg(
-            pos=robot_pos,
+            pos=ROBOT_POS,
             rot=(1, 0.0, 0.0, 0),
         ),
         collision_group = 0,
@@ -508,7 +508,7 @@ MGN_CFGs_URDF = [
     for mgn in MGN_PATHS_URDF
 ]
 
-if targo:
+if TARGO:
     TARGO_CFGs_URDF = [
         RigidObjectCfg(
             spawn=sim_utils.UrdfFileCfg(
@@ -552,15 +552,15 @@ TEST_OBJ = [RigidObjectCfg(
             scale=(1.0, 1.0, 1.0),
         ),
             init_state=RigidObjectCfg.InitialStateCfg(
-                pos=robot_pos,
+                pos=ROBOT_POS,
                 rot=(1., 0., 0., 0),
             ),)
 ]
 
 ################# OBJECT CONFIG #################
-if targo:
+if TARGO:
     OBJ_CFGs = TARGO_CFGs_URDF
-elif use_urdf_converter:
+elif USE_URDF_CONVERTER:
     OBJ_CFGs = MGN_CFGs_URDF
 elif test_obj:
     OBJ_CFGs = TEST_OBJ
@@ -587,7 +587,7 @@ FRAME_MARKER_SMALL_CFG.markers["frame"].scale = (0.10, 0.10, 0.10)
 ################# REMOTE AGENT CONFIG #################
 
 # server initialization
-if remote_agent:
+if REMOTE_AGENT:
     import socket, sys
     chunk_size = 4096
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

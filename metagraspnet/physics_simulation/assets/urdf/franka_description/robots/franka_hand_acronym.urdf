@@ -1,0 +1,79 @@
+<?xml version="1.0" ?>
+<robot name="panda_gripper" xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <link name="base">
+  </link>
+  
+  <joint name="hand_joint" type="prismatic">
+    <parent link="base"/>
+    <child link="hand"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="80" lower="-2" upper="2" velocity="40"/>
+  </joint>
+  
+  <link name="hand">
+    <visual>
+      <origin rpy="1.5707963267 0 1.5707963267" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://franka_description/meshes/visual/hand.obj"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="0 0 1.5707963267" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://franka_description/meshes/collision/hand.obj"/>
+      </geometry>
+    </collision>
+  </link>
+  
+  <link name="left_finger">
+    <visual>
+      <origin rpy="1.5707963267 0 1.5707963267" xyz="0.0 0.0 0.0"/>
+      <geometry>  
+        <mesh filename="package://franka_description/meshes/visual/finger.obj"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="0 0 1.5707963267" xyz="0.0 0 0.0"/>-->
+      <geometry>
+        <mesh filename="package://franka_description/meshes/collision/finger.obj"/>
+      </geometry>
+    </collision>
+  </link>
+  
+  
+  <joint name="finger_joint_left" type="prismatic">
+    <parent link="hand"/>
+    <child link="left_finger"/>
+    <origin rpy="0 0 0" xyz="-0.04 0 0.0584"/>
+    <axis xyz="1 0 0"/>
+    <limit effort="70" lower="0.0" upper="0.04" velocity="0.1"/>
+  </joint>
+
+
+  <link name="right_finger">
+    <visual>
+      <origin rpy="1.5707963267 0 4.71239" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://franka_description/meshes/visual/finger.obj"/>
+      </geometry>
+    </visual>
+    
+    <collision>
+    <origin rpy="0 0 4.71239" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://franka_description/meshes/collision/finger.obj"/>
+      </geometry>
+    </collision>
+  </link>
+  
+  <joint name="finger_joint_right" type="prismatic">
+    <parent link="hand"/>
+    <child link="right_finger"/>
+    <origin rpy="0 0 0" xyz="0.04 0 0.0584"/>
+    <axis xyz="1 0 0"/>
+    <limit effort="70" lower="-0.04" upper="0.0" velocity="0.1"/>
+    <mimic joint="finger_joint_left"/>
+  </joint>
+ 
+</robot>
+  

@@ -24,19 +24,19 @@ gym.register(
     entry_point="isaac_env.air_env_grasp:AIREnvGrasp",
     kwargs={
         "env_cfg_entry_point": air_env_cfg.CellEnvCfg,
-        "sb3_cfg_entry_point": f"{agents.__name__}:sb3_sac_cfg.yaml",
+        "sb3_cfg_entry_point": f"{agents.__name__}:sb3_ppo_cfg.yaml",
         "rl_games_cfg_entry_point": f"{agents.__name__}:rl_games_ppo_cfg.yaml",
     },
     disable_env_checker=True,
 )
 
 gym.register(
-    id="AIR-v0-Cont",
+    id="AIR-v0-RL",
     # entry_point="isaaclab.envs:ManagerBasedRLEnv",
     entry_point="isaac_env.air_env_rl:AIREnvRL",
     kwargs={
         "env_cfg_entry_point": air_env_cfg.CellEnvCfg,
-        "sb3_cfg_entry_point": f"{agents.__name__}:sb3_sac_cfg.yaml",
+        "sb3_cfg_entry_point": f"{agents.__name__}:sb3_ppo_cfg.yaml",
         "rl_games_cfg_entry_point": f"{agents.__name__}:rl_games_ppo_cfg.yaml",
     },
     disable_env_checker=True,
@@ -48,7 +48,7 @@ gym.register(
     entry_point="isaac_env.air_env_data:AIREnvData",
     kwargs={
         "env_cfg_entry_point": air_env_cfg.CellEnvCfg,
-        "sb3_cfg_entry_point": f"{agents.__name__}:sb3_sac_cfg.yaml",
+        "sb3_cfg_entry_point": f"{agents.__name__}:sb3_ppo_cfg.yaml",
         "rl_games_cfg_entry_point": f"{agents.__name__}:rl_games_ppo_cfg.yaml",
     },
     disable_env_checker=True,
@@ -60,7 +60,7 @@ gym.register(
     entry_point="isaac_env.air_env_tele:AIREnvTele",
     kwargs={
         "env_cfg_entry_point": air_env_cfg.CellEnvCfg,
-        "sb3_cfg_entry_point": f"{agents.__name__}:sb3_sac_cfg.yaml",
+        "sb3_cfg_entry_point": f"{agents.__name__}:sb3_ppo_cfg.yaml",
         "rl_games_cfg_entry_point": f"{agents.__name__}:rl_games_ppo_cfg.yaml",
     },
     disable_env_checker=True,
