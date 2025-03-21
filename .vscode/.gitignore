@@ -3,6 +3,4 @@
 # Ignore all other files
 .python.env
 
-settings.json
-launch.json
 logs/*

@@ -34,7 +34,7 @@ from __future__ import annotations
 
 import argparse
 
-from omni.isaac.lab.app import AppLauncher
+from isaaclab.app import AppLauncher
 
 # add argparse arguments
 parser = argparse.ArgumentParser(description="Utility to convert a URDF into USD format.")
@@ -69,12 +69,12 @@ import contextlib
 import os, glob
 
 import carb
-import omni.isaac.core.utils.stage as stage_utils
+import isaacsim.core.utils.stage as stage_utils
 import omni.kit.app
 
-from omni.isaac.lab.sim.converters import UrdfConverter, UrdfConverterCfg
-from omni.isaac.lab.utils.assets import check_file_path
-from omni.isaac.lab.utils.dict import print_dict
+from isaaclab.sim.converters import UrdfConverter, UrdfConverterCfg
+from isaaclab.utils.assets import check_file_path
+from isaaclab.utils.dict import print_dict
 
 
 def main():
@@ -96,8 +96,8 @@ def main():
             merge_fixed_joints=args_cli.merge_joints,
             force_usd_conversion=True,
             make_instanceable=args_cli.make_instanceable,
-            convex_decompose_mesh=True,
-            
+            joint_drive=None,     
+            collider_type = "convex_decomposition"  
         )
 
         # Print info

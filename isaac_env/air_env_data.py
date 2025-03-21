@@ -14,17 +14,17 @@ from typing import Dict, Tuple, Union
 import cv2
 import numpy as np
 
-# from omni.isaac.lab.envs.mdp.rewards import action_rate_l2, action_l2
+# from isaaclab.envs.mdp.rewards import action_rate_l2, action_l2
 import pandas as pd
 import torch
-from omni.isaac.lab.controllers import DifferentialIKController
+from isaaclab.controllers import DifferentialIKController
 
-# from omni.isaac.lab.controllers.rmp_flow import *
-from omni.isaac.lab.managers import SceneEntityCfg
-from omni.isaac.lab.markers import VisualizationMarkers
-from omni.isaac.lab.markers.config import FRAME_MARKER_CFG, RAY_CASTER_MARKER_CFG
-from omni.isaac.lab.utils import convert_dict_to_backend
-from omni.isaac.lab.utils.math import subtract_frame_transforms, quat_mul, combine_frame_transforms
+# from isaaclab.controllers.rmp_flow import *
+from isaaclab.managers import SceneEntityCfg
+from isaaclab.markers import VisualizationMarkers
+from isaaclab.markers.config import FRAME_MARKER_CFG, RAY_CASTER_MARKER_CFG
+from isaaclab.utils import convert_dict_to_backend
+from isaaclab.utils.math import subtract_frame_transforms, quat_mul, combine_frame_transforms
 from metagraspnet.Scripts.visualize_labels import (
     create_contact_pose,
     from_contact_to_6D,

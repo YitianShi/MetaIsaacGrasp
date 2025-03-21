@@ -14,20 +14,22 @@ import random
 from pathlib import Path
 import matplotlib.pyplot as plt
 
-import omni.isaac.lab.sim as sim_utils
+import isaaclab.sim as sim_utils
 import torch
 import numpy as np
 from .read_targo import read_targo
 from scipy.spatial.transform import Rotation as R
 
-# from omni.isaac.lab.sensors.camera import Camera, PinholeCameraCfg
-from omni.isaac.lab.actuators import ImplicitActuatorCfg
-from omni.isaac.lab.assets import ArticulationCfg, AssetBaseCfg, RigidObjectCfg
-from omni.isaac.lab.controllers import DifferentialIKControllerCfg
-from omni.isaac.lab.sensors import CameraCfg
-from omni.isaac.lab.utils.math import *
+# from isaaclab.sensors.camera import Camera, PinholeCameraCfg
+from isaaclab.actuators import ImplicitActuatorCfg
+from isaaclab.assets import ArticulationCfg, AssetBaseCfg, RigidObjectCfg
+from isaaclab.controllers import DifferentialIKControllerCfg
+from isaaclab.sensors import CameraCfg
+from isaaclab.utils.math import *
+from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR
 from dataclasses import MISSING
 import trimesh as tm
+
 
 # Hyperparameters
 # Parameters frequently changed
@@ -51,13 +53,13 @@ bow_angle = 0.1 # bow angle of the robot
 down_ration = .75 # down ration of the robot
 wrist_lift = .5 # wrist lift of the robot
 approach_distance = 0.05 # distance to approach the object before grasp
-lift_height = 0.5 # height to lift the object
+lift_height = 0.4 # height to lift the object
 grasp_distance = 0.1 # apprach distance before grasp the object
 distance_limit = 2e-2 # distance limit for robot to reach the goal before state transition
 ee_vel_limit = 5e-2 # velocity limit for robot to reach the goal before state transition
 ee_grasp_quat_default = (.5, -0.5, 0.5, -0.5) # default quaternion after grasping
 CONTROLLER = "NOT_IMPLEMENTED" # Not used, in future version, choose from "RMPFLOW"
-remote_agent = True # use remote agent for training
+remote_agent = False # use remote agent for training
 targo = False
 
 # Camera parameters
@@ -86,19 +88,37 @@ STATE_MACHINE = {
     "execute": 8,
 }
 
-obj_exclude = [ '003', '033', '030', '055', '074', '078', '018',
-               #'017', '059', '003', '069', '068', '055', '065', '070',
-                #'022', '074', '077', '044', '056', '027', '060', '008',
-                #'026', '019', '043', '061', '076', '025', '018', '079',
-                #'028', '067', '010', '012', '004', '035', '020', '023'
-                ]
+#obj_exclude = [ '003', '033', '030', '055', '074', '078', '018',
+#               #'017', '059', '003', '069', '068', '055', '065', '070',
+#                #'022', '074', '077', '044', '056', '027', '060', '008',
+#                #'026', '019', '043', '061', '076', '025', '018', '079',
+#                #'028', '067', '010', '012', '004', '035', '020', '023'
+#                ]
+# obj_exclude = [ '003', '033', '030', '055', '074', '078', '018',
+#                 "037", "032", "041", "071", "076", "070", "068",
+#                 "038", "072", "035"]
+obj_exclude = []
+
+test_obj = False
+if test_obj:
+    num_objs = 1
 
 ################# PATH CONFIG #################
-HOME_PATH =  "omniverse://nucleus.ifl.kit.edu/Users/yitian/" # Path(os.getcwd())
+HOME_PATH =  "omniverse://nucleus.ifl.kit.edu/Users/yitian/" # 
+#HOME_PATH = Path(os.getcwd())
 
 nums = [f"{i:03}" for i in range(0, 83)]
 for i in obj_exclude:
     nums = [j for j in nums if i not in j]
+
+# for testing define single object
+
+# 009 - scissors
+# 078 - bookshelf
+
+# no
+#nums = ["037", "032", "041", "071", "076", "070", "068"]
+
     
 MODEL_PATH = os.path.join(HOME_PATH, "models", "models_ifl") # path to the models
 MGN_PATHS = [os.path.join(MODEL_PATH, a, "orbit_obj.usd") for a in nums] # path to the objects
@@ -107,9 +127,10 @@ CORNER_PATHS = [os.path.join(HOME_PATH, "models/obj.usd")] # path to the corner 
 MGN_PATHS_URDF = [os.path.join(MODEL_PATH, a, "textured.urdf") for a in nums] # path to the objects in urdf format
 
 # Target object path and pose
-view_pos_targo = (0.3, 0.18, 0.) # viewpoint wrt. targo object
-shift_targo = tuple(a + b for a, b in zip(view_pos_targo, robot_pos))
-TARGO_OBJ_PATHS, targo_obj_scales, targo_obj_positions, targo_obj_rotations, occ_targ_max, targo_extrinsic, targo_obj_chosen = read_targo(shift_targo)
+if targo:
+    view_pos_targo = (0.3, 0.18, 0.) # viewpoint wrt. targo object
+    shift_targo = tuple(a + b for a, b in zip(view_pos_targo, robot_pos))
+    TARGO_OBJ_PATHS, targo_obj_scales, targo_obj_positions, targo_obj_rotations, occ_targ_max, targo_extrinsic, targo_obj_chosen = read_targo(shift_targo)
 
 USD_PATH = os.path.join(HOME_PATH, "models") # path to the usd files
 IMG_PATH = os.path.join("./", "data") # path to the data storage
@@ -214,7 +235,7 @@ desk_center = (0.75, 0.2, 0) # center of the desk
 ee_obj_default = [
     (desk_center[0] - 0.15, desk_center[0] + 0.15),
     (desk_center[1] - 0.15, desk_center[1] + 0.15),
-    (0.05, 0.15),
+    (0.05, 0.55),
     (-1, 1),
     (-1, 1),
     (-1, 1),
@@ -304,7 +325,7 @@ CAMERA_RANDOM_CFG = [
 
 # Reachable end effector goals
 ee_goals_default = [
-    (desk_center[0] - 0.4, desk_center[0] + 0.4),
+    (desk_center[0] - 0.5, desk_center[0] + 0.3),
     (desk_center[1] - 0.6, desk_center[1] + 0.4),
     (0.4, 0.6),
     (-1, 1),
@@ -330,15 +351,15 @@ UR10e_2F85_CFG = ArticulationCfg(
     actuators={
         "arm": ImplicitActuatorCfg(
             joint_names_expr=list(ARM_JOINT.keys()),
-            velocity_limit=100.0,
-            effort_limit=1e4,
+            velocity_limit_sim=100.0,
+            effort_limit_sim=1e4,
             stiffness=5e3,
             damping=400.0,
         ),
         "gripper": ImplicitActuatorCfg(
             joint_names_expr=[*ROBOTIQ_2F85_JOINT_CFG["default"]],
-            velocity_limit=100.0,
-            effort_limit=1e10,
+            velocity_limit_sim=100.0,
+            effort_limit_sim=1e10,
             stiffness=1e10,
             damping=1,
         ),
@@ -362,16 +383,16 @@ UR10e_HAND_E_CFG = ArticulationCfg(
     actuators={
         "arm": ImplicitActuatorCfg(
             joint_names_expr=list(ARM_JOINT.keys()),
-            velocity_limit=100.0,
-            effort_limit=1e4,
+            velocity_limit_sim=100.0,
+            effort_limit_sim=1e4,
             stiffness=5e3,
             damping=400.0,
         ),
         "gripper": ImplicitActuatorCfg(
             joint_names_expr=[*ROBOTIQ_HAND_E_JOINT_CFG["default"]],
-            stiffness=1e10,
-            damping=1e3,
-            friction=0.8
+            stiffness=7000.,#1e10,
+            damping=100.,#1e3,
+            #friction=0.8
         ),
     },
 )
@@ -389,13 +410,14 @@ ee_name = end_effector_frame_name[robot_name]
 rigid_props = sim_utils.RigidBodyPropertiesCfg(
     rigid_body_enabled=True,
     disable_gravity=False,
-    max_depenetration_velocity=50.0,
-    linear_damping = 1,
-    angular_damping = 2,
+    max_depenetration_velocity=1.0,
+    linear_damping = .1,
+    angular_damping = .1,
     max_contact_impulse = float("inf"),
-    max_linear_velocity=1,
+    max_angular_velocity=2,
+    max_linear_velocity=2,
     solver_position_iteration_count=32,
-    solver_velocity_iteration_count=16,
+    solver_velocity_iteration_count=10,
     stabilization_threshold=0.1,
     )
 
@@ -404,7 +426,7 @@ TABLE_CFG = AssetBaseCfg(
         usd_path=f"{USD_PATH}/Workspace/Table_sim.usd",
         rigid_props=sim_utils.RigidBodyPropertiesCfg(
             disable_gravity=True,
-            max_depenetration_velocity=50.0,
+            max_depenetration_velocity=.01,
             linear_damping = 1,
             angular_damping = 2,
             max_contact_impulse = float("inf"),
@@ -466,12 +488,13 @@ MGN_CFGs_URDF = [
         spawn=sim_utils.UrdfFileCfg(
             asset_path=mgn,
             rigid_props=rigid_props,
+            joint_drive=None,
             mass_props = sim_utils.MassPropertiesCfg(density=5.0),
             articulation_props=sim_utils.ArticulationRootPropertiesCfg(
                 articulation_enabled=False,
             ),
             fix_base=False,
-            force_usd_conversion=True,
+            #force_usd_conversion=True,
             make_instanceable=False,
             semantic_tags=[("class", f"{mgn.split('/')[-2]}"), ("color", "red")],
             collision_props=sim_utils.CollisionPropertiesCfg(collision_enabled=True),
@@ -485,31 +508,53 @@ MGN_CFGs_URDF = [
     for mgn in MGN_PATHS_URDF
 ]
 
-TARGO_CFGs_URDF = [
-    RigidObjectCfg(
-        spawn=sim_utils.UrdfFileCfg(
-            asset_path=tgo,
-            rigid_props= rigid_props,
-            mass_props = sim_utils.MassPropertiesCfg(density=5.0),
-            articulation_props=sim_utils.ArticulationRootPropertiesCfg(
-                articulation_enabled=False,
+if targo:
+    TARGO_CFGs_URDF = [
+        RigidObjectCfg(
+            spawn=sim_utils.UrdfFileCfg(
+                asset_path=tgo,
+                rigid_props= rigid_props,
+                mass_props = sim_utils.MassPropertiesCfg(density=5.0),
+                articulation_props=sim_utils.ArticulationRootPropertiesCfg(
+                    articulation_enabled=False,
+                ),
+                fix_base=False,
+                force_usd_conversion=True,
+                make_instanceable=False,
+                semantic_tags=[("class", f"{tgo.split('/')[-2]}"), ("color", "red")],
+                scale=[scale] * 3,
+                visual_material = sim_utils.PreviewSurfaceCfg(
+                diffuse_color=(0., 0., 0.) if targo_obj_chosen == tgo else (random.random(), random.random(), random.random()),
+                metallic=0.5
+        ),
             ),
-            fix_base=False,
-            force_usd_conversion=True,
-            make_instanceable=False,
-            semantic_tags=[("class", f"{tgo.split('/')[-2]}"), ("color", "red")],
-            scale=[scale] * 3,
-            visual_material = sim_utils.PreviewSurfaceCfg(
-            diffuse_color=(0., 0., 0.) if targo_obj_chosen == tgo else (random.random(), random.random(), random.random()),
-            metallic=0.5
-       ),
+            init_state=RigidObjectCfg.InitialStateCfg(
+                pos=pos,
+                rot=rot,
+            ),
+        )
+        for tgo, pos, rot, scale in zip(TARGO_OBJ_PATHS, targo_obj_positions, targo_obj_rotations, targo_obj_scales)
+    ]
+
+
+TEST_OBJ = [RigidObjectCfg(
+        prim_path="/World/envs/env_.*/object",
+        spawn=sim_utils.UsdFileCfg(
+            usd_path=f"{ISAAC_NUCLEUS_DIR}/Props/Blocks/red_block.usd",
+                rigid_props=sim_utils.RigidBodyPropertiesCfg(
+                solver_position_iteration_count=16,
+                solver_velocity_iteration_count=1,
+                max_angular_velocity=1000.0,
+                max_linear_velocity=1000.0,
+                max_depenetration_velocity=5.0,
+                disable_gravity=False,
+            ),
+            scale=(1.0, 1.0, 1.0),
         ),
-        init_state=RigidObjectCfg.InitialStateCfg(
-            pos=pos,
-            rot=rot,
-        ),
-    )
-    for tgo, pos, rot, scale in zip(TARGO_OBJ_PATHS, targo_obj_positions, targo_obj_rotations, targo_obj_scales)
+            init_state=RigidObjectCfg.InitialStateCfg(
+                pos=robot_pos,
+                rot=(1., 0., 0., 0),
+            ),)
 ]
 
 ################# OBJECT CONFIG #################
@@ -517,6 +562,8 @@ if targo:
     OBJ_CFGs = TARGO_CFGs_URDF
 elif use_urdf_converter:
     OBJ_CFGs = MGN_CFGs_URDF
+elif test_obj:
+    OBJ_CFGs = TEST_OBJ
 else:
     OBJ_CFGs = MGN_CFGs
 
@@ -533,7 +580,7 @@ ROBOT_CFGs = {
 
 ################# MARKER CONFIG #################
 marker_scale = 0.025
-from omni.isaac.lab.markers.config import FRAME_MARKER_CFG  # isort: skip
+from isaaclab.markers.config import FRAME_MARKER_CFG  # isort: skip
 FRAME_MARKER_SMALL_CFG = FRAME_MARKER_CFG.copy()
 FRAME_MARKER_SMALL_CFG.markers["frame"].scale = (0.10, 0.10, 0.10)
 
@@ -547,7 +594,7 @@ if remote_agent:
     # Allows the socket to reuse the address
     server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     try:
-        server.bind(('localhost', 8081))
+        server.bind(('172.22.222.222', 8081))
         server.listen(1)
         print("Simulation server is waiting for the agent...")
         conn, addr = server.accept()

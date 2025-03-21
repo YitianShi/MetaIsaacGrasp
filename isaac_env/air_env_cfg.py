@@ -1,32 +1,32 @@
-# from omni.isaac.lab.sensors.camera import Camera, PinholeCameraCfg
+# from isaaclab.sensors.camera import Camera, PinholeCameraCfg
 from dataclasses import MISSING
 from math import pi
 
-import omni.isaac.lab.sim as sim_utils
-import omni.isaac.lab.utils.math as math_utils
+import isaaclab.sim as sim_utils
+import isaaclab.utils.math as math_utils
 import torch
-from omni.isaac.lab.assets import ArticulationCfg, AssetBaseCfg
-from omni.isaac.lab.envs import (
+from isaaclab.assets import ArticulationCfg, AssetBaseCfg
+from isaaclab.envs import (
     ManagerBasedEnv,
     ManagerBasedRLEnv,
     ManagerBasedRLEnvCfg,
     mdp,
 )
-from omni.isaac.lab.managers import EventTermCfg as EventTerm
-from omni.isaac.lab.managers import ObservationGroupCfg as ObsGroup
-from omni.isaac.lab.managers import ObservationTermCfg as ObsTerm
-from omni.isaac.lab.managers import RewardTermCfg as RewTerm
-from omni.isaac.lab.managers import SceneEntityCfg
-from omni.isaac.lab.managers import TerminationTermCfg as DoneTerm
-from omni.isaac.lab.scene import InteractiveSceneCfg
-from omni.isaac.lab.sensors.camera.utils import create_pointcloud_from_depth
-from omni.isaac.lab.sensors.frame_transformer import OffsetCfg
-from omni.isaac.lab.sensors.frame_transformer.frame_transformer_cfg import (
+from isaaclab.managers import EventTermCfg as EventTerm
+from isaaclab.managers import ObservationGroupCfg as ObsGroup
+from isaaclab.managers import ObservationTermCfg as ObsTerm
+from isaaclab.managers import RewardTermCfg as RewTerm
+from isaaclab.managers import SceneEntityCfg
+from isaaclab.managers import TerminationTermCfg as DoneTerm
+from isaaclab.scene import InteractiveSceneCfg
+from isaaclab.sensors.camera.utils import create_pointcloud_from_depth
+from isaaclab.sensors.frame_transformer import OffsetCfg
+from isaaclab.sensors.frame_transformer.frame_transformer_cfg import (
     FrameTransformerCfg,
 )
-from omni.isaac.lab.utils import configclass
-from omni.isaac.lab.utils.math import *
-from omni.isaac.lab.markers.config import RAY_CASTER_MARKER_CFG
+
+from isaaclab.utils import configclass
+from isaaclab.utils.math import *
 
 from .element_cfg import *
 
@@ -55,7 +55,6 @@ class CellSceneCfg(InteractiveSceneCfg):
         self.table: AssetBaseCfg = TABLE_CFG.replace(
             prim_path="{ENV_REGEX_NS}/Table"
         )
-
         setattr(self, robot_name, ROBOT_CFGs[robot_name].replace(
             prim_path="{ENV_REGEX_NS}/" + robot_name
         ))
@@ -414,7 +413,7 @@ def grasp_success_compute(env) -> torch.Tensor:
     objs_hight = torch.stack([env._get_obj_pos(i)[:, -1] for i in range(num_objs)]).T
     # The obj is lifted if its height is above 90% of the lift height
     # The environment should reach the terminate state
-    objs_hight_over_limit = objs_hight > lift_height * 0.9
+    objs_hight_over_limit = objs_hight > lift_height * 0.8
     success_env = torch.any(objs_hight_over_limit, dim=1) & (STATE_MACHINE["lift"] == env.sm_state)
     # Successive grasp failure is reset if the env is successful
     env.successive_grasp_failure[success_env] = -1

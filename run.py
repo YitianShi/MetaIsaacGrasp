@@ -20,7 +20,7 @@ It uses the `warp` library to run the state machine in parallel on the GPU.
 import argparse
 import torch
 
-from omni.isaac.lab.app import AppLauncher
+from isaaclab.app import AppLauncher
 # add argparse arguments
 parser = argparse.ArgumentParser(description="Pick and lift state machine for lift environments.")
 parser.add_argument(
@@ -33,6 +33,7 @@ parser.add_argument("--video", action="store_true", default=False, help="Record 
 parser.add_argument("--video_length", type=int, default=200, help="Length of the recorded video (in steps).")
 parser.add_argument("--video_interval", type=int, default=2000, help="Interval between video recordings (in steps).")
 parser.add_argument("--max_iterations", type=int, default=None, help="RL Policy training iterations.")
+parser.add_argument("--save_camera_data", action="store_true", default=False, help="Save camera data.")
 parser.add_argument("--task", type=str, default="AIR-v0-Grasp", choices=["AIR-v0-Grasp", "AIR-v0-Cont", "AIR-v0-Data", "AIR-v0-Tele"], help="Task name.")
 
 parser.add_argument(
@@ -42,6 +43,7 @@ parser.add_argument(
 AppLauncher.add_app_launcher_args(parser)
 # parse the arguments
 args_cli = parser.parse_args()
+args_cli.num_envs = 1 if args_cli.task == "AIR-v0-Tele" else args_cli.num_envs
 
 # launch omniverse app
 app_launcher = AppLauncher(args_cli)

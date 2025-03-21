@@ -20,7 +20,7 @@ from .wp_cfg import *
 
 gym.register(
     id="AIR-v0-Grasp",
-    # entry_point="omni.isaac.lab.envs:ManagerBasedRLEnv",
+    # entry_point="isaaclab.envs:ManagerBasedRLEnv",
     entry_point="isaac_env.air_env_grasp:AIREnvGrasp",
     kwargs={
         "env_cfg_entry_point": air_env_cfg.CellEnvCfg,
@@ -32,7 +32,7 @@ gym.register(
 
 gym.register(
     id="AIR-v0-Cont",
-    # entry_point="omni.isaac.lab.envs:ManagerBasedRLEnv",
+    # entry_point="isaaclab.envs:ManagerBasedRLEnv",
     entry_point="isaac_env.air_env_rl:AIREnvRL",
     kwargs={
         "env_cfg_entry_point": air_env_cfg.CellEnvCfg,
@@ -44,7 +44,7 @@ gym.register(
 
 gym.register(
     id="AIR-v0-Data",
-    # entry_point="omni.isaac.lab.envs:ManagerBasedRLEnv",
+    # entry_point="isaaclab.envs:ManagerBasedRLEnv",
     entry_point="isaac_env.air_env_data:AIREnvData",
     kwargs={
         "env_cfg_entry_point": air_env_cfg.CellEnvCfg,
@@ -56,7 +56,7 @@ gym.register(
 
 gym.register(
     id="AIR-v0-Tele",
-    # entry_point="omni.isaac.lab.envs:ManagerBasedRLEnv",
+    # entry_point="isaaclab.envs:ManagerBasedRLEnv",
     entry_point="isaac_env.air_env_tele:AIREnvTele",
     kwargs={
         "env_cfg_entry_point": air_env_cfg.CellEnvCfg,

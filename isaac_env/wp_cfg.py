@@ -302,7 +302,8 @@ def infer_state_machine_disc(
     elif state == PickSmState.lift:
         # robot lifts the object
         grasp_pos = wp.add(wp.transform_get_translation(grasp_pose[tid]), wp.vec3(0.0, 0.0, lift_height))
-        des_ee_pose[tid] = wp.transform(grasp_pos, ee_quat_default[tid])
+        grasp_rot = wp.transform_get_rotation(grasp_pose[tid])
+        des_ee_pose[tid] = wp.transform(grasp_pos, grasp_rot)
         des_gripper_state[tid] = GripperState.CLOSE
         if dist_transforms(ee_pose[tid], des_ee_pose[tid])<distance_limit and ee_vel[tid]<ee_vel_limit or sm_wait_time[tid] >= PickSmLimitTime.lift:
             # move to next state and reset wait time

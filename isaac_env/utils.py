@@ -1,6 +1,6 @@
 import numpy as np
 import torch
-from omni.isaac.lab.utils.math import matrix_from_quat, quat_from_matrix
+from isaaclab.utils.math import matrix_from_quat, quat_from_matrix
 
 from .element_cfg import *
 

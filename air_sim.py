@@ -1,9 +1,9 @@
 import gymnasium as gym
 import torch
 
-import omni.isaac.lab_tasks  # noqa: F401
-from omni.isaac.lab_tasks.utils.parse_cfg import parse_env_cfg, load_cfg_from_registry
-from omni.isaac.lab.utils.math import subtract_frame_transforms, quat_from_matrix
+import isaaclab_tasks  # noqa: F401
+from isaaclab_tasks.utils.parse_cfg import parse_env_cfg, load_cfg_from_registry
+from isaaclab.utils.math import subtract_frame_transforms, quat_from_matrix
 from isaac_env.element_cfg import *
 from isaac_env.utils import *
 # initialize warp
@@ -14,15 +14,9 @@ from stable_baselines3.common.callbacks import CheckpointCallback
 from stable_baselines3.common.logger import configure
 from stable_baselines3.common.vec_env import VecNormalize
 
-from isaac_env.air_env_grasp import AIR_RLTaskEnv
-from omni.isaac.lab.utils.io import dump_pickle, dump_yaml
-from omni.isaac.lab.utils.dict import print_dict
-from omni.isaac.lab_tasks.utils.wrappers.sb3 import Sb3VecEnvWrapper, process_sb3_cfg
-
-import socket
-import pickle
-import struct
-import open3d as o3d
+from isaaclab.utils.io import dump_pickle, dump_yaml
+from isaaclab.utils.dict import print_dict
+from isaaclab_rl.sb3 import Sb3VecEnvWrapper, process_sb3_cfg
 
 class AIRPickSm:
     """A simple state machine in a robot's task space to pick and lift an object.
@@ -47,7 +41,7 @@ class AIRPickSm:
             num_envs=args_cli.num_envs,
             use_fabric=not args_cli.disable_fabric,
         )
-        self.env = gym.make(args_cli.task, cfg=env_cfg)        
+        self.env = gym.make(args_cli.task, cfg=env_cfg, save_camera_data=args_cli.save_camera_data)        
         self.device = self.env_unwrapped.device
         self.num_envs = self.env_unwrapped.num_envs
         # Environment index
@@ -152,19 +146,13 @@ class AIRPickSm:
         self.obs_buf, reward_buf, reset_terminated, dones, self.inference_criteria = self.env.step(actions)
 
         
-    def propose_action(self, demo = not use_sb3, get_pcd = False):
+    def propose_action(self, get_pcd = False):
         
         # Get the envs that are in the choose object state
         ids = self.env_idx.clone()[self.inference_criteria]
             
-        if self.teleop:
-            actions = self.env_unwrapped.get_teleop_action(ids, self.obs_buf)
-
-        elif remote_agent:
-            actions = self.env_unwrapped.remote_action(ids, self.obs_buf)
-            
-        elif demo or collect_data:
-            actions = self.env_unwrapped.get_grasp_pose_demo(ids, self.obs_buf)
+        if not use_sb3:
+            actions = self.env_unwrapped.get_action(ids, self.obs_buf)
         else:
             # Use policy if not demo:
             # Get the camera data
@@ -176,7 +164,7 @@ class AIRPickSm:
             # Get the grasp pose from the policy
             actions = self.policy(rgbs, depths, pcds, ids)
 
-            if save_data:
+            if True:
                 for id, grasp_pose, rgb, depth in zip(ids, actions[:, :7], rgbs, depths):
                     self.env_unwrapped.save_data(id, grasp_pose, None, rgb, depth)
         

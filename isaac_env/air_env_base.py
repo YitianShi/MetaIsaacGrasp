@@ -20,18 +20,17 @@ import pickle
 import struct
 import sys
 
-# from omni.isaac.lab.envs.mdp.rewards import action_rate_l2, action_l2
+# from isaaclab.envs.mdp.rewards import action_rate_l2, action_l2
 import pandas as pd
 import torch
-from omni.isaac.lab.controllers import DifferentialIKController
-from omni.isaac.lab.devices import Se3Keyboard
+from isaaclab.controllers import DifferentialIKController
 
-# from omni.isaac.lab.controllers.rmp_flow import *
-from omni.isaac.lab.managers import SceneEntityCfg
-from omni.isaac.lab.markers import VisualizationMarkers
-from omni.isaac.lab.markers.config import FRAME_MARKER_CFG, RAY_CASTER_MARKER_CFG
-from omni.isaac.lab.utils import convert_dict_to_backend
-from omni.isaac.lab.utils.math import subtract_frame_transforms, quat_mul, combine_frame_transforms, apply_delta_pose
+# from isaaclab.controllers.rmp_flow import *
+from isaaclab.managers import SceneEntityCfg
+from isaaclab.markers import VisualizationMarkers
+from isaaclab.markers.config import FRAME_MARKER_CFG, RAY_CASTER_MARKER_CFG
+from isaaclab.utils import convert_dict_to_backend
+from isaaclab.utils.math import subtract_frame_transforms, combine_frame_transforms
 
 from metagraspnet.Scripts.visualize_labels import (
     create_contact_pose,
@@ -39,7 +38,7 @@ from metagraspnet.Scripts.visualize_labels import (
     read_in_mesh_config,
 )
 from isaac_env import *
-from omni.isaac.lab.envs import ManagerBasedRLEnv
+from isaaclab.envs import ManagerBasedRLEnv
 
 ##
 # Pre-defined configs
@@ -94,6 +93,7 @@ class AIREnvBase(ManagerBasedRLEnv):
 
         # convert to warp
         self.inference_state = STATE_MACHINE["choose_object"]
+        self.reward_state = STATE_MACHINE["lift"]
         self.sm_dt_wp = wp.from_torch(self.sm_dt, wp.float32)
         self.sm_state_wp = wp.from_torch(self.sm_state, wp.int32)
         self.sm_wait_time_wp = wp.from_torch(self.sm_wait_time, wp.float32)
@@ -298,6 +298,7 @@ class AIREnvBase(ManagerBasedRLEnv):
             # Compute the kinematics
 
             joint_pos_des_rel = self._action_plan()
+
             # Add the gripper command
             joint_pos_des_rel = torch.concatenate(
                 (joint_pos_des_rel, action_env[:, -1:]), dim=1
@@ -344,62 +345,7 @@ class AIREnvBase(ManagerBasedRLEnv):
         return self.get_action_demo(ids, obs_buf)
     
     def get_action_remote(self):
-        if not (self.sm_state == STATE_MACHINE["execute"]).any():
-            print("[Tele Info]: Environment is not in the execute state, no remote agent inference.")
-            return
-        
-        data = self.obs_buf["policy"]["pcd"]
-        env_num, cam_id, h, w, _ = data.shape
-
-        # Filter the point cloud data
-        data = data.view(env_num * cam_id * h * w, 3)
-        data = data[data[:, 0] > ee_goals_default[0][0]] 
-        data = data[data[:, 0] < ee_goals_default[0][1]] 
-        data = data[data[:, 1] > ee_goals_default[1][0]]
-        data = data[data[:, 1] < ee_goals_default[1][1]]
-        data = data[data[:, 2] > -5e-2]
-        
-        if data.shape[0] == 0:
-            print("No point cloud data, skip the inference.")
-            return
-
-        data = data.view(env_num, -1, 3)
-        data = (data*1000).to(torch.int16) if data.dtype == torch.float32 else data
-        data = pickle.dumps(data.cpu().numpy())
-                    
-        # Send the data to the agent
-        print("[Tele Info]: Sending data to remote agent...")
-        data_length = struct.pack('>I', len(data)) 
-        conn.sendall(data_length + data)
-        
-        # Receive the actions from the agent
-        print("[Tele Info]: Receiving actions from agent...")
-        data = b""
-        data_length_bin = None
-        while not data_length_bin:
-            data_length_bin = conn.recv(4)
-        data_length = struct.unpack('>I', data_length_bin)[0]
-        while len(data) < data_length:
-            packet = conn.recv(chunk_size)
-            if not packet:
-                break
-            data += packet
-        actions = pickle.loads(data)
-        actions = actions.to(self.device)
-        no_action = actions[:, 3, -1] == 0
-
-        # Calculate the grasp pose by moving the grasp pose backward
-        R = actions[:, :3, :3]
-        forward_dir = torch.tensor([0., 1., 0.], device=self.device).repeat(env_num, 1)
-        forward_dir = (R @ forward_dir.unsqueeze(-1)).squeeze(-1)
-        translation = actions[:, :3, 3] #- forward_dir * 0.1
-        rotactions = quat_from_matrix(R)
-        actions = torch.cat((translation, rotactions), dim=-1)
-        if no_action.any():
-            print("[Tele Info]: Agent failed to provide actions.")
-        else:
-            self.grasp_pose = actions.to(self.device)
-        self.sm_state[self.sm_state == STATE_MACHINE["execute"]] = STATE_MACHINE["reach"]
+        raise NotImplementedError
 
     def get_action_demo(self, ids, obs_buf):
         """Get the grasp pose from the camera data."""
@@ -534,7 +480,7 @@ class AIREnvBase(ManagerBasedRLEnv):
         reset the indexed enviroments
         """
         # Judge in the terminate state
-        judge_reward = self.sm_state == STATE_MACHINE["execute"]
+        judge_reward = self.sm_state == self.reward_state
         # Calculate the reward
         if reward_buf.any():
             self._record_reward(judge_reward)

@@ -19,17 +19,17 @@ import socket
 import pickle
 import struct
 
-# from omni.isaac.lab.envs.mdp.rewards import action_rate_l2, action_l2
+# from isaaclab.envs.mdp.rewards import action_rate_l2, action_l2
 import pandas as pd
 import torch
-from omni.isaac.lab.controllers import DifferentialIKController
+from isaaclab.controllers import DifferentialIKController
 
-# from omni.isaac.lab.controllers.rmp_flow import *
-from omni.isaac.lab.managers import SceneEntityCfg
-from omni.isaac.lab.markers import VisualizationMarkers
-from omni.isaac.lab.markers.config import FRAME_MARKER_CFG, RAY_CASTER_MARKER_CFG
-from omni.isaac.lab.utils import convert_dict_to_backend
-from omni.isaac.lab.utils.math import subtract_frame_transforms, quat_mul, combine_frame_transforms
+# from isaaclab.controllers.rmp_flow import *
+from isaaclab.managers import SceneEntityCfg
+from isaaclab.markers import VisualizationMarkers
+from isaaclab.markers.config import FRAME_MARKER_CFG, RAY_CASTER_MARKER_CFG
+from isaaclab.utils import convert_dict_to_backend
+from isaaclab.utils.math import subtract_frame_transforms, quat_mul, combine_frame_transforms
 
 from metagraspnet.Scripts.visualize_labels import (
     create_contact_pose,
@@ -114,5 +114,45 @@ class AIREnvGrasp(AIREnvBase):
             return self.get_action_remote(ids, obs_buf)
         else:
             return self.get_action_demo(ids, obs_buf)
+        
+    def get_action_remote(self, ids, obs_buf):
+        data = obs_buf["policy"]["pcd"][ids]
+        env_num, cam_id, h, w, _ = data.shape
+        data = data.view(env_num * cam_id, h * w, 3)
+        
+        data = (data*1000).to(torch.int16) if data.dtype == torch.float32 else data
+        data = pickle.dumps(data.cpu().numpy())
+                    
+        # Send the data to the agent
+        print("Sending data to agent...")
+        data_length = struct.pack('>I', len(data)) 
+        conn.sendall(data_length + data)
+        
+        # Receive the actions from the agent
+        print("Receiving actions from agent...")
+        data = b""
+        data_length_bin = None
+        while not data_length_bin:
+            data_length_bin = conn.recv(4)
+        data_length = struct.unpack('>I', data_length_bin)[0]
+        while len(data) < data_length:
+            packet = conn.recv(chunk_size)
+            if not packet:
+                break
+            data += packet
+        actions = pickle.loads(data)
+        no_action = actions[:, 3, -1] == 0
+        rotactions = quat_from_matrix(actions[:, :3, :3])
+        translation = actions[:, :3, 3]
+        actions = torch.cat((translation, rotactions), dim=-1).to(self.device)
+        if no_action.any():
+            no_action_ids = ids[no_action]
+            print("Agent failed to provide actions.")
+            actions_remains = self.get_action_demo(no_action_ids, self.obs_buf)[no_action_ids]
+            actions[no_action] = actions_remains
+        
+        self.grasp_pose[ids] = actions.to(self.device)
+        return self.grasp_pose
+
 
     
