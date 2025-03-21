@@ -22,7 +22,7 @@ A data generation engine and test bench for grasp learning, powered by [IsaacLab
 
 <div align="center">
   <img src="pic/rl.gif" style="width: 500px;" />
-  <p style="font-size: 12px;">Reinforcement learning</p>
+  <p style="font-size: 12px;">Reinforcement learning with stable baseline3</p>
 </div>
 
 #### Demo video (Inference with remote agent functionality by [vMF-Contact](https://github.com/YitianShi/vMF-Contact))
