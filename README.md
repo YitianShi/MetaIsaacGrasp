@@ -27,18 +27,31 @@ A data generation engine and test bench for grasp learning, powered by [IsaacLab
 
 #### Demo video (Inference with remote agent functionality by [vMF-Contact](https://github.com/YitianShi/vMF-Contact))
 
-(*Click to watch, all the successfully grasped objects will be put under the table.)
+(*click to watch, all the successfully grasped objects will be put under the table.)
 
-[![Video Title](https://img.youtube.com/vi/FSXTWSLbo68/0.jpg)](https://www.youtube.com/watch?v=FSXTWSLbo68)
+<div align="center">
+  <a href="https://www.youtube.com/watch?v=FSXTWSLbo68">
+    <img src="https://img.youtube.com/vi/FSXTWSLbo68/0.jpg" alt="Demo Video">
+  </a>
+</div>
 
 #### Teleoperation
 
-[![Video Title](https://img.youtube.com/vi/XxlxfCCyMCE/0.jpg)](https://www.youtube.com/watch?v=XxlxfCCyMCE)
+<div align="center">
+  <a href="https://www.youtube.com/watch?v=XxlxfCCyMCE">
+    <img src="https://img.youtube.com/vi/XxlxfCCyMCE/0.jpg" alt="Teleoperation Video 1">
+  </a>
+</div>
 
-Our teleoperation may also supported by vMF-Contact to reach objects:
+#### Our teleoperation may also supported by vMF-Contact to reach objects:
 
-[![Video Title](https://img.youtube.com/vi/SV-5fFmEhaA/0.jpg)](https://www.youtube.com/watch?v=SV-5fFmEhaA)
+<div align="center">
+  <a href="https://www.youtube.com/watch?v=SV-5fFmEhaA">
+    <img src="https://img.youtube.com/vi/SV-5fFmEhaA/0.jpg" alt="Teleoperation Video 2">
+  </a>
+</div>
 
+#### Captured images: RGB, Segmentation, Depth, Normals
 <div align="center">
 <p float="left">
   <img src="pic/rgb.png" width="200" />
@@ -46,7 +59,6 @@ Our teleoperation may also supported by vMF-Contact to reach objects:
   <img src="pic/depth.png" width="200" />
   <img src="pic/normals.png" width="200" />
 </p>
-<p>Captured images: RGB, Segmentation, Depth, Normals</p>
 </div>
 
 ## Getting started
