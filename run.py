@@ -34,16 +34,17 @@ parser.add_argument("--video_length", type=int, default=200, help="Length of the
 parser.add_argument("--video_interval", type=int, default=2000, help="Interval between video recordings (in steps).")
 parser.add_argument("--max_iterations", type=int, default=None, help="RL Policy training iterations.")
 parser.add_argument("--save_camera_data", action="store_true", default=False, help="Save camera data.")
-parser.add_argument("--task", type=str, default="AIR-v0-Grasp", choices=["AIR-v0-Grasp", "AIR-v0-RL", "AIR-v0-Data", "AIR-v0-Tele"], help="Task name.")
-
-parser.add_argument(
-    "--distributed", action="store_true", help="Run training with multiple GPUs or nodes."
-)
+parser.add_argument("--task", type=str, default="AIR-v0-Grasp", choices=["AIR-v0-Grasp", 
+                                                                         "AIR-v0-RL", 
+                                                                         "AIR-v0-Data", 
+                                                                         "AIR-v0-Tele"], help="Task name.")
+parser.add_argument("--distributed", action="store_true", help="Run training with multiple GPUs or nodes.")
 # append AppLauncher cli args
 AppLauncher.add_app_launcher_args(parser)
 # parse the arguments
 args_cli = parser.parse_args()
 args_cli.num_envs = 1 if args_cli.task == "AIR-v0-Tele" else args_cli.num_envs
+
 
 # launch omniverse app
 app_launcher = AppLauncher(args_cli)
@@ -58,17 +59,18 @@ settings.set("/renderer/multiGPU/enabled", True)
 settings.set("/renderer/multiGPU/autoEnable", True)
 settings.set("/rtx/realtime/mgpu/autoTiling/enabled", True)
 
-from air_sim import AIRPickSm
 """Rest everything else."""
 
 import time
-from isaac_env import USE_SB3
+TASK = args_cli.task.split("-")[-1]
+
+exec(f"from isaac_env.air_env_{TASK.lower()} import AIRPickSm{TASK} as AIRSim")
 
 if __name__ == "__main__":
     # run the main function
-    simulator = AIRPickSm(args_cli)
+    simulator = AIRSim(args_cli)
     simulator.init_run()
-    if USE_SB3:
+    if "RL" in TASK:
         simulator.run_sb3()
     else:
         while simulation_app.is_running():

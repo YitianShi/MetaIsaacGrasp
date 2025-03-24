@@ -2,7 +2,7 @@ import numpy as np
 import torch
 from isaaclab.utils.math import matrix_from_quat, quat_from_matrix
 
-from .element_cfg import *
+from .air_env_base.element_cfg import *
 
 
 
