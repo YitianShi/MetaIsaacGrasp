@@ -17,19 +17,11 @@ import numpy as np
 # from isaaclab.envs.mdp.rewards import action_rate_l2, action_l2
 import pandas as pd
 import torch
-from isaaclab.controllers import DifferentialIKController
-
 # from isaaclab.controllers.rmp_flow import *
-from isaaclab.managers import SceneEntityCfg
-from isaaclab.markers import VisualizationMarkers
-from isaaclab.markers.config import FRAME_MARKER_CFG, RAY_CASTER_MARKER_CFG
-from isaaclab.utils import convert_dict_to_backend
-from isaaclab.utils.math import subtract_frame_transforms, quat_mul, combine_frame_transforms
 
 from .wp_cfg import *
-from .env_cfg import *
 from isaac_env import AIREnvBase
-
+from .env_cfg import *
 ##
 # Pre-defined configs
 ##
@@ -63,6 +55,8 @@ class AIREnvRL(AIREnvBase):
 
         self.inference_state = STATE_MACHINE["execute"]
         self.reward_state = STATE_MACHINE["execute"]
+
+        self.RL_TRAIN_FLAG = True
         
     def _advance_state_machine(self):
         """Compute the desired state of the robot's end-effector and the gripper."""
@@ -82,6 +76,7 @@ class AIREnvRL(AIREnvBase):
             self.env_reachable_and_stable.contiguous(), wp.bool
         )
         grasp_pose_wp = wp.from_torch(self.grasp_pose, wp.transform)
+        gripper_state_con_wp = wp.from_torch(self.gripper_state_con, wp.float32)
 
         wp.launch(
                 kernel=infer_state_machine_con,
@@ -107,7 +102,7 @@ class AIREnvRL(AIREnvBase):
                     self.ee_quat_default_wp,
                     # proposed grasp pose
                     grasp_pose_wp,
-                    self.gripper_state_con_wp,
+                    gripper_state_con_wp,
                     # continuous control time recorder
                     self.advance_frame_con_wp,
                     self.frame_wait_time_con_wp,
@@ -139,13 +134,13 @@ class AIREnvRL(AIREnvBase):
 
     
     def process_action(self, grasp_pose):
-        quat = grasp_pose[:, 3:7]
-        norm = quat.norm(dim=1, keepdim=True)
-        quat_normalized = quat / norm
-
+        xyz = self.scene["ee_frame"].data.target_pos_source.clone()[:, 0, :]
+        quat = self.scene["ee_frame"].data.target_quat_source.clone()[:, 0, :]
+        # xyz + dxdydz
         grasp_pose[:, :3] /= torch.norm(grasp_pose[:, :3], dim=-1, keepdim=True)
-        pos = self.scene["ee_frame"].data.target_pos_source.clone()[:, 0, :] + 0.05 * grasp_pose[:, :3]
-        action_normalized = torch.cat((pos, self.scene["ee_frame"].data.target_quat_source.clone()[:, 0, :]), dim=1)
+        pos = xyz + 0.05 * grasp_pose[:, :3]
+        action_normalized = torch.cat((pos, quat), dim=1)
+        self.gripper_state_con = grasp_pose[:, -1]  
         return action_normalized
 
 

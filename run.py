@@ -70,7 +70,7 @@ if __name__ == "__main__":
     # run the main function
     simulator = AIRSim(args_cli)
     simulator.init_run()
-    if "RL" in TASK:
+    if "RL" in TASK and simulator.env.env.get_wrapper_attr('RL_TRAIN_FLAG'):
         simulator.run_sb3()
     else:
         while simulation_app.is_running():

@@ -144,7 +144,6 @@ def rgb_capture(env):
     rgb = torch.stack(rgb, 0).transpose(0, 1)
     return rgb
 
-
 def normal_capture(env):
     """Height scan from the given sensor w.r.t. the sensor's frame."""
     # extract the used quantities (to enable type-hinting)
@@ -166,11 +165,11 @@ def depth_capture(env):
     # Maximum representable value for the tensor's dtype
     # Clip positive infinity to maximum value
     depth_data = torch.clip(torch.stack(data, 0).transpose(0, 1), 0., DEPTH_MAX)
-    return depth_data
+    return depth_data / DEPTH_MAX if hasattr(env, "RL_TRAIN_FLAG") else depth_data
 
 
 def gripper_pose_capture(env):
-    """获取夹爪状态作为观测"""
+    """Get the gripper state as an observation"""
     ob_gripper_pose = env._get_ee_pose()
     return ob_gripper_pose
 
@@ -330,7 +329,7 @@ def reset_root_state_sphere(
     env_ids: torch.Tensor,
     SPHERE_RADIUS: float,
     asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
-    angle_min = 0, angle_max = pi / 4
+    angle_min = 0, angle_max = pi / 3
 ):
     """Reset the asset root state to a random position on a sphere surface.
     
@@ -344,8 +343,6 @@ def reset_root_state_sphere(
     of the form ``(min, max)``. If the dictionary does not contain a key, the velocity is set to zero for that axis.
     """
 
-    angle_min = 0
-    angle_max = pi / 3
 
     if len(env_ids):
         ROBOT_POS = env.scene[ROBOT_NAME].data.root_pos_w[env_ids]

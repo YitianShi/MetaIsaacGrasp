@@ -17,7 +17,7 @@ from stable_baselines3.common.vec_env import VecNormalize
 from isaaclab.utils.io import dump_pickle, dump_yaml
 from isaaclab.utils.dict import print_dict
 from isaaclab_rl.sb3 import Sb3VecEnvWrapper, process_sb3_cfg
-from isaac_env.agents.custom_extractor import CustomExtractor
+from isaac_env.agents.custom_extractor import CustomExtractor, SecondCustomExtractor
 
 from isaac_env.air_env_base.sim import AIRPickSm
 from .element_cfg import OBJ_LABLE
@@ -34,9 +34,12 @@ class AIRPickSmRL(AIRPickSm):
     def __init__(self, args_cli):
         super().__init__(args_cli)
         self.obj_label = OBJ_LABLE
-        self._rlg_train(args_cli)
-            
 
+        if self.env_unwrapped.RL_TRAIN_FLAG:
+            self._rlg_train(args_cli)
+        else:
+            self._load_model(args_cli)
+            
     def _rlg_train(self, args_cli):
         # directory for logging into
         
@@ -101,7 +104,8 @@ class AIRPickSmRL(AIRPickSm):
             policy_kwargs=dict(
                 features_extractor_class=CustomExtractor,
                 features_extractor_kwargs={},
-                net_arch={'pi': [256, 256, 128, 64, 7], 'vf': [256, 256, 128, 64, 1]}, # 最后这个1可以不写
+                net_arch={'pi': [32,16], 'vf': [32,16]},
+                # net_arch={'pi': [256, 128, 64], 'vf': [256, 128, 64]},
             ),
             **agent_cfg
         )
@@ -112,8 +116,12 @@ class AIRPickSmRL(AIRPickSm):
         self.agent.set_logger(new_logger)
 
         # callbacks for agent
-        self.checkpoint_callback = CheckpointCallback(save_freq=2000, save_path=self.log_dir, name_prefix="model", verbose=2)
+        self.checkpoint_callback = CheckpointCallback(save_freq=20000, save_path=self.log_dir, name_prefix="model", verbose=2)
     
+    def _load_model(self, args_cli):
+        checkpoint = "2025-04-08_05-57-15" # modify as needed
+        path = os.path.join("logs", "sb3", args_cli.task, checkpoint, "model")
+        self.model = PPO.load(path)
     
     def init_run(self):
         """Initialize the simulation loop."""
@@ -123,7 +131,6 @@ class AIRPickSmRL(AIRPickSm):
         self.env_unwrapped.update_env_state()
         print("-" * 80)
         print("[INFO]: Reset finish...")
-        
         
     def run_sb3(self):
         # train the agent
@@ -141,46 +148,16 @@ class AIRPickSmRL(AIRPickSm):
         self.obs_buf, reward_buf, reset_terminated, dones, self.inference_criteria = self.env.step(actions)
 
         
-    def propose_action(self, get_pcd = False):
-        
-        # Get the envs that are in the choose object state
-        ids = self.env_idx.clone()[self.inference_criteria]
-            
-        # Use policy if not demo:
-        # Get the camera data
-        actions = self.policy(ids, get_pcd)
-
-        if True:
-            for id, grasp_pose, rgb, depth in zip(ids, actions[:, :7], rgbs = self.obs_buf['rgb'], depths = self.obs_buf['distance_to_image_plane']):
-                self.env_unwrapped.save_data(id, grasp_pose, None, rgb, depth)
-        
-        return actions
-
-    
-    def policy(self, ids, get_pcd, view_poses_rob=None):
-        """
-        Get the grasp pose from the policy
-        """
-        rgbs = self.obs_buf['rgb'][ids]
-        depths = self.obs_buf['distance_to_image_plane'][ids]
-        pcds = self.obs_buf['pcd'][ids] if get_pcd else None
-        rgbs = rgbs.float() / 255.0
-        depths = (depths - depths.min()) / (depths.max() - depths.min() + 1e-8)
-
-        obs_dict = {
-            "rgb": rgbs.to(self.device),
-            "distance_to_image_plane": depths.to(self.device),
+    def propose_action(self):
+        required_keys = self.model.observation_space.spaces.keys()
+        obs_dict = self.obs_buf["policy"]
+        obs_np = {
+            k: obs_dict[k].detach().cpu().numpy()
+            for k in required_keys if k in obs_dict
         }
+        actions, _ = self.model.predict(obs_np, deterministic=True)
 
-        if pcds is not None:
-            obs_dict["pcd"] = pcds.to(self.device)
-        
-        # Get the grasp pose from the policy
-        grasp_pose, gripper_state_con = None, None # TODO: Implement the policy
-        actions, _ = self.agent.predict(obs_dict, deterministic=True) 
-        grasp_pose, gripper_state_con = actions[:, :7], actions[:, 7] 
-
-        return torch.cat((grasp_pose, gripper_state_con), dim=-1)
+        return torch.tensor(actions, device=self.device)
 
 
     @property

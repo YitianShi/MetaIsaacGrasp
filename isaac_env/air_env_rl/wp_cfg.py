@@ -66,9 +66,11 @@ def infer_state_machine_con(
         des_gripper_state[tid] = GripperState.OPEN
         # when the environment is stable, 
         # robot starts to take photo and choose the object
-        if env_stable[tid] == True or sm_wait_time[tid] >= PickSmLimitTime.start:
+        if env_stable[tid] == True:
             sm_state[tid] = PickSmState.execute
             sm_wait_time[tid] = 0.0
+        elif sm_wait_time[tid] >= PickSmLimitTime.start:
+            sm_state[tid] = PickSmState.init
     
     elif state == PickSmState.execute:
         # robot start to execute the grasp based on continuous control
@@ -76,26 +78,15 @@ def infer_state_machine_con(
         des_gripper_state[tid] = gripper_state[tid]
         advance_frame[tid] = False
         # error between current and desired ee pose below threshold
-        if sm_wait_time[tid] >= PickSmLimitTime.frame:
+        if sm_wait_time[tid] > 0:
             # step frame
             # if advance_frame is True, the controller need to make decision
             advance_frame[tid] = True
-            frame_wait_time[tid] = 0.0
-        else:
-            frame_wait_time[tid] = frame_wait_time[tid] + dt[tid]
+        #     frame_wait_time[tid] = 0.0
+        # else: 
+        #     frame_wait_time[tid] = frame_wait_time[tid] + dt[tid]
+        
         if sm_wait_time[tid] >= PickSmLimitTime.execute:
-    #         sm_state[tid] = PickSmState.lift
-    #         advance_frame[tid] = False
-    #         sm_wait_time[tid] = 0.0
-    #         frame_wait_time[tid] = 0.0
-
-    # elif state == PickSmState.lift:
-    #     # robot lifts the object
-    #     grasp_pos = wp.add(wp.transform_get_translation(grasp_pose[tid]), wp.vec3(0.0, 0.0, LIFT_HEIGHT))
-    #     des_ee_pose[tid] = wp.transform(grasp_pos, ee_quat_default[tid])
-    #     des_gripper_state[tid] = GripperState.CLOSE
-    #     if dist_transforms(ee_pose[tid], des_ee_pose[tid])<DISTANCE_LIMIT and ee_vel[tid]<EE_VEL_LIMIT or sm_wait_time[tid] >= PickSmLimitTime.lift:
-    #         # move to next state and reset wait time
             sm_state[tid] = PickSmState.init
         
     # increment wait time
