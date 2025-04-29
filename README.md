@@ -99,3 +99,4 @@ Please cite our paper which uses the whole framework for reference:
   year={2024}
 }
 ```
+Funded by the Deutsche Forschungsgemeinschaft (DFG, German Research Foundation) – SFB 1574 – 471687386
