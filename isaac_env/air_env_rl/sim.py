@@ -150,7 +150,10 @@ class AIRPickSmRL(AIRPickSm):
         
     def propose_action(self):
         required_keys = self.model.observation_space.spaces.keys()
-        obs_dict = self.obs_buf["policy"]
+        if isinstance(self.obs_buf, dict):
+            obs_dict = self.obs_buf["policy"]
+        elif isinstance(self.obs_buf, tuple):
+            obs_dict = self.obs_buf[0]["policy"]
         obs_np = {
             k: obs_dict[k].detach().cpu().numpy()
             for k in required_keys if k in obs_dict
