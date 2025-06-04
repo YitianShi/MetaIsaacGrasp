@@ -7,12 +7,12 @@ import os
 
 from .. import agents
 from isaac_env.utils import *
-from .env_cfg import CellEnvCfg
-from .sim import AIRPickSmTele
-from .env import AIREnvTele
+from .env_cfg import *
+from .sim import AIRPickSmSKRL
+from .env import AIREnvSKRL
 from .element_cfg import *
 
-__all__ = ["AIRPickSmTele", "AIREnvTele"]
+__all__ = ["AIRPickSmSKRL", "AIREnvSKRL"]
 
 ##
 # Register Gym environments.
@@ -23,13 +23,13 @@ __all__ = ["AIRPickSmTele", "AIREnvTele"]
 ##
 
 gym.register(
-    id="AIR-v0-Tele",
+    id="AIR-v0-SKRL",
     # entry_point="isaaclab.envs:ManagerBasedRLEnv",
-    entry_point="isaac_env.air_env_grasp:AIREnvTele",
+    entry_point="isaac_env.air_env_skrl:AIREnvSKRL",
     kwargs={
         "env_cfg_entry_point": CellEnvCfg,
-        "sb3_cfg_entry_point": f"{agents.__name__}:sb3_ppo_cfg.yaml",
-        "rl_games_cfg_entry_point": f"{agents.__name__}:rl_games_ppo_cfg.yaml",
+        "skrl_cfg_entry_point": f"{agents.__name__}:skrl_ppo_cfg.yaml",
     },
     disable_env_checker=True,
 )
+

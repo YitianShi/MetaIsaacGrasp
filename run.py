@@ -35,9 +35,11 @@ parser.add_argument("--video_interval", type=int, default=2000, help="Interval b
 parser.add_argument("--max_iterations", type=int, default=None, help="RL Policy training iterations.")
 parser.add_argument("--save_camera_data", action="store_true", default=False, help="Save camera data.")
 parser.add_argument("--task", type=str, default="AIR-v0-Grasp", choices=["AIR-v0-Grasp", 
-                                                                         "AIR-v0-RL", 
+                                                                         "AIR-v0-SB3", 
                                                                          "AIR-v0-Data", 
-                                                                         "AIR-v0-Tele"], help="Task name.")
+                                                                         "AIR-v0-Tele",
+                                                                         "AIR-v0-SKRL"
+                                                                         ], help="Task name.")
 parser.add_argument("--distributed", action="store_true", help="Run training with multiple GPUs or nodes.")
 # append AppLauncher cli args
 AppLauncher.add_app_launcher_args(parser)
@@ -70,8 +72,8 @@ if __name__ == "__main__":
     # run the main function
     simulator = AIRSim(args_cli)
     simulator.init_run()
-    if "RL" in TASK and simulator.env.env.get_wrapper_attr('RL_TRAIN_FLAG'):
-        simulator.run_sb3()
+    if hasattr(simulator, "run_rl") and simulator.env.env.get_wrapper_attr('RL_TRAIN_FLAG'):
+        simulator.run_rl()
     else:
         while simulation_app.is_running():
             # record run time

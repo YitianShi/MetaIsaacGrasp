@@ -1,15 +1,15 @@
-# MetaIsaacGrasp: IsaacLab for Supervised / Reinforcement learning (Support IsaacLab 2.0.2 and IsaacSim 4.5)
+# MetaIsaacGrasp: IsaacLab for Supervised / Reinforcement learning (Support IsaacLab 2.0 and IsaacSim 4.5)
 
 A data generation engine and test bench for grasp learning, powered by [IsaacLab](https://github.com/isaac-sim/IsaacLab) and [MetaGraspNetv2](https://github.com/maximiliangilles/MetaGraspNet) (MGN) including: 
 
 - Data generation `AIR-v0-Data`
 - Policy evaluation `AIR-v0-Grasp`
 - Teleoperation `AIR-v0-Tele`
-- Reinforcement learning `AIR-v0-RL`
+- Reinforcement learning `AIR-v0-SB3`, `AIR-v0-SKRL`
 
 ### New features:
 
-1. RL support with `stable baseline3` with `AIR-v0-RL`
+1. RL support with `stable baseline3` with `AIR-v0-SB3`, `AIR-v0-SKRL`
 2. Support IsaacLab 2.0 and IsaacSim 4.5.0
 3. Both single-shot grasp execution and continuous learning supported
 4. Teleoperation environment `AIR-v0-Tele`
@@ -99,4 +99,3 @@ Please cite our paper which uses the whole framework for reference:
   year={2024}
 }
 ```
-Funded by the Deutsche Forschungsgemeinschaft (DFG, German Research Foundation) – SFB 1574 – 471687386

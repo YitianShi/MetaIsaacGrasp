@@ -35,9 +35,9 @@ gym.register(
 )
 
 gym.register(
-    id="AIR-v0-RL",
+    id="AIR-v0-SB3",
     # entry_point="isaaclab.envs:ManagerBasedRLEnv",
-    entry_point="isaac_env.air_env_rl:AIREnvRL",
+    entry_point="isaac_env.air_env_rl:AIREnvSB3",
     kwargs={
         "env_cfg_entry_point": CellEnvCfg,
         "sb3_cfg_entry_point": f"{agents.__name__}:sb3_ppo_cfg.yaml",

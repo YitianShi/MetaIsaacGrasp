@@ -28,7 +28,7 @@ class PickSmLimitTime:
     approach = wp.constant(1.5)
     grasp = wp.constant(.5)
     lift = wp.constant(2.5)
-    execute = wp.constant(20.)
+    execute = wp.constant(5.)
     frame = wp.constant(0.1)
     
 @wp.func

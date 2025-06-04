@@ -8,7 +8,7 @@
 
 from isaac_env.air_env_base.element_cfg import *
 
-REMOTE_AGENT = False
+REMOTE_AGENT = True
 
 # server initialization
 if REMOTE_AGENT:
@@ -18,7 +18,7 @@ if REMOTE_AGENT:
     # Allows the socket to reuse the address
     server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     try:
-        server.bind(('172.22.222.222', 8081))
+        server.bind(('localhost', 8081))
         server.listen(1)
         print("Simulation server is waiting for the agent...")
         conn, addr = server.accept()

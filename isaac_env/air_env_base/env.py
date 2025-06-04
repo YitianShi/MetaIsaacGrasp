@@ -31,7 +31,7 @@ from isaaclab.markers import VisualizationMarkers
 from isaaclab.markers.config import FRAME_MARKER_CFG, RAY_CASTER_MARKER_CFG
 from isaaclab.utils import convert_dict_to_backend
 from isaaclab.utils.math import subtract_frame_transforms, combine_frame_transforms
-from metagraspnet.Scripts.visualize_labels import read_in_mesh_config
+from grasp_sampler.visualize_grasp_object import read_in_mesh_config
 from .wp_cfg import *
 from .env_cfg import *
 from isaac_env.utils import *
@@ -547,11 +547,11 @@ class AIREnvBase(ManagerBasedRLEnv):
         )
 
         # Update camera marker
-        for cam_id in range(N_MULTIPLE_CAM):
-           self.camera_markers[cam_id].visualize(
-               self.camera[cam_id].data.pos_w.clone(),
-               self.camera[cam_id].data.quat_w_ros.clone(),
-            )
+        #for cam_id in range(N_MULTIPLE_CAM):
+        #   self.camera_markers[cam_id].visualize(
+        #       self.camera[cam_id].data.pos_w.clone(),
+        #       self.camera[cam_id].data.quat_w_ros.clone(),
+        #    )
             
         
     def save_data(
